@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/walkerlab/devenv-engine/internal/config"
+
 	"github.com/spf13/cobra"
 )
 
@@ -70,9 +72,68 @@ Examples:
 				fmt.Printf("Output directory: %s\n", output)
 				fmt.Printf("Dry run mode: %t\n", dryRun)
 			}
-			// TODO: implement single developer logic
+			cfg, err := config.LoadDeveloperConfig(developerName)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error loading config for developer %s: %v\n", developerName, err)
+				os.Exit(1)
+			}
+
+			fmt.Printf("✅ Successfully loaded configuration for developer: %s\n", cfg.Name)
+
+			if verbose {
+				fmt.Printf("Output directory: %s\n", output)
+				fmt.Printf("Dry run mode: %t\n", dryRun)
+				printConfigSummary(cfg)
+			}
+
+			// TODO: implement manifest generation
 		}
 	},
+}
+
+// Helper function to print config summary
+func printConfigSummary(cfg *config.DevEnvConfig) {
+	fmt.Printf("\nConfiguration Summary:\n")
+	fmt.Printf("  Name: %s\n", cfg.Name)
+
+	sshKeys, _ := cfg.GetSSHKeys()
+	fmt.Printf("  SSH Keys: %d configured\n", len(sshKeys))
+
+	if cfg.SSHPort != 0 {
+		fmt.Printf("  SSH Port: %d\n", cfg.SSHPort)
+	}
+
+	if cfg.Git.Name != "" {
+		fmt.Printf("  Git: %s <%s>\n", cfg.Git.Name, cfg.Git.Email)
+	}
+
+	if cfg.Resources.CPU != nil || cfg.Resources.Memory != "" {
+		cpuStr := formatCPU(cfg.Resources.CPU)
+		fmt.Printf("  Resources: CPU=%s, Memory=%s, GPU=%d\n",
+			cpuStr, cfg.Resources.Memory, cfg.Resources.GPU)
+
+	}
+
+	if len(cfg.Volumes) > 0 {
+		fmt.Printf("  Volumes: %d configured\n", len(cfg.Volumes))
+	}
+}
+
+// Helper function to format CPU value for display
+func formatCPU(cpu any) string {
+	if cpu == nil {
+		return "default"
+	}
+	switch v := cpu.(type) {
+	case string:
+		return v
+	case int:
+		return fmt.Sprintf("%d", v)
+	case float64:
+		return fmt.Sprintf("%.0f", v)
+	default:
+		return fmt.Sprintf("%v", v) // Fallback
+	}
 }
 
 // Version subcommand

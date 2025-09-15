@@ -15,6 +15,7 @@ tasks:
   clean:
     desc: Clean build artifacts
     cmds:
+      - go clean
       - rm -rf {{.BUILD_DIR}}
 
   test:
