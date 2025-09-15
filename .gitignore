@@ -1,3 +1,6 @@
+# Task cache files
+.task/
+
 # Binaries for programs and plugins
 *.exe
 *.exe~

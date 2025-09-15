@@ -23,7 +23,7 @@ DevEnv Engine provides a command-line interface and library for:
 
 ```bash
 # Clone the repository
-git clone https://github.com/enigma-brain/devenv-engine.git
+git clone https://github.com/walkerlab/devenv-engine.git
 cd devenv-engine
 
 # Build the CLI tool
