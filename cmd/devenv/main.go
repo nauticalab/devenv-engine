@@ -21,9 +21,10 @@ var (
 	verbose bool
 
 	// Command-specific flags
-	output  string
-	dryRun  bool
-	allDevs bool
+	output    string
+	configDir string // Input directory for developer configs
+	dryRun    bool
+	allDevs   bool
 )
 
 // Root command
@@ -70,9 +71,10 @@ Examples:
 			fmt.Printf("Generating manifests for developer: %s\n", developerName)
 			if verbose {
 				fmt.Printf("Output directory: %s\n", output)
+				fmt.Printf("Config directory: %s\n", configDir)
 				fmt.Printf("Dry run mode: %t\n", dryRun)
 			}
-			cfg, err := config.LoadDeveloperConfig(developerName)
+			cfg, err := config.LoadDeveloperConfig(configDir, developerName)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error loading config for developer %s: %v\n", developerName, err)
 				os.Exit(1)
@@ -117,6 +119,8 @@ func printConfigSummary(cfg *config.DevEnvConfig) {
 	if len(cfg.Volumes) > 0 {
 		fmt.Printf("  Volumes: %d configured\n", len(cfg.Volumes))
 	}
+
+	fmt.Printf("  Developer Config Dir: %s\n", cfg.GetDeveloperDir())
 }
 
 // Helper function to format CPU value for display
@@ -160,6 +164,8 @@ func init() {
 
 	// Generate command specific flags
 	generateCmd.Flags().StringVarP(&output, "output", "o", "./build", "Output directory for generated manifests")
+	generateCmd.Flags().StringVar(&configDir, "config-dir", "./developers", "Directory containing developer configuration files")
+
 	generateCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be generated without creating files")
 	generateCmd.Flags().BoolVar(&allDevs, "all-developers", false, "Generate manifests for all developers")
 }

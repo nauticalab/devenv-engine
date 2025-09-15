@@ -16,6 +16,11 @@ type DevEnvConfig struct {
 	Resources    ResourceConfig `yaml:"resources,omitempty"`
 	Volumes      []VolumeMount  `yaml:"volumes,omitempty"`
 	Refresh      RefreshConfig  `yaml:"refresh,omitempty"`
+	developerDir string         `yaml:"-"` // Directory where the developer config is located
+}
+
+func (c *DevEnvConfig) GetDeveloperDir() string {
+	return c.developerDir
 }
 
 // GitConfig represents Git-related configuration

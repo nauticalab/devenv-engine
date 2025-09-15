@@ -9,8 +9,9 @@ import (
 )
 
 // LoadDeveloperConfig loads and parses a developer's configuration file
-func LoadDeveloperConfig(developerName string) (*DevEnvConfig, error) {
-	configPath := filepath.Join("developers", developerName, "devenv-config.yaml")
+func LoadDeveloperConfig(configDir, developerName string) (*DevEnvConfig, error) {
+	developerDir := filepath.Join(configDir, developerName)
+	configPath := filepath.Join(developerDir, "devenv-config.yaml")
 
 	// Check if the config file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -33,6 +34,9 @@ func LoadDeveloperConfig(developerName string) (*DevEnvConfig, error) {
 	if err := validateConfig(&config); err != nil {
 		return nil, fmt.Errorf("invalid configurationin %s: %w", configPath, err)
 	}
+
+	config.developerDir = developerDir
+
 	return &config, nil
 
 }
