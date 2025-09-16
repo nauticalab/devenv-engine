@@ -1,0 +1,5 @@
+name: "multissh"
+sshPublicKey:
+  - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... key1@example.com"
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... key2@example.com"
+sshPort: 30002

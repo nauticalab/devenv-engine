@@ -39,7 +39,7 @@ spec:
       containers:
       - name: {{.Name}}
 {{- if .Image}}
-        image: {{.CustomImage}}
+        image: {{.Image}}
 {{- else}}
         image: ubuntu:22.04
 {{- end}}

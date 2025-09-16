@@ -1,6 +1,7 @@
 package config
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -105,6 +106,90 @@ func TestGetSSHKeys(t *testing.T) {
 			} else {
 				require.NoError(t, err) // Stops test if error occurs
 				assert.Equal(t, tc.expected, result)
+			}
+		})
+	}
+}
+
+// TestLoadDeveloperConfig tests loading configuration from YAML files
+func TestLoadDeveloperConfig(t *testing.T) {
+	// Use testdata directory for test fixtures
+	testConfigDir := "testdata"
+
+	testCases := []struct {
+		name           string
+		developerName  string
+		expectError    bool
+		expectedName   string
+		expectedSSHLen int // Number of SSH keys expected
+		expectedPort   int
+		expectedUID    int
+	}{
+		{
+			name:           "load valid complete configuration",
+			developerName:  "valid_user",
+			expectError:    false,
+			expectedName:   "testuser",
+			expectedSSHLen: 1,
+			expectedPort:   30001,
+			expectedUID:    2000,
+		},
+		{
+			name:           "load minimal valid configuration",
+			developerName:  "minimal_user",
+			expectError:    false,
+			expectedName:   "minimal",
+			expectedSSHLen: 1,
+			expectedPort:   0, // No SSH port specified
+			expectedUID:    0, // No UID specified
+		},
+		{
+			name:           "load configuration with multiple SSH keys",
+			developerName:  "multi_ssh_user",
+			expectError:    false,
+			expectedName:   "multissh",
+			expectedSSHLen: 2,
+			expectedPort:   30002,
+			expectedUID:    0,
+		},
+		{
+			name:          "configuration file does not exist",
+			developerName: "nonexistent_user",
+			expectError:   true,
+		},
+		{
+			name:          "invalid configuration missing name",
+			developerName: "invalid_user",
+			expectError:   true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Act
+			config, err := LoadDeveloperConfig(testConfigDir, tc.developerName)
+
+			// Assert
+			if tc.expectError {
+				require.Error(t, err)
+				assert.Nil(t, config)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, config)
+
+				// Test specific config values
+				assert.Equal(t, tc.expectedName, config.Name)
+				assert.Equal(t, tc.expectedPort, config.SSHPort)
+				assert.Equal(t, tc.expectedUID, config.UID)
+
+				// Test SSH keys
+				sshKeys, err := config.GetSSHKeys()
+				require.NoError(t, err)
+				assert.Len(t, sshKeys, tc.expectedSSHLen)
+
+				// Test that developer directory is set correctly
+				expectedDir := filepath.Join(testConfigDir, tc.developerName)
+				assert.Equal(t, expectedDir, config.GetDeveloperDir())
 			}
 		})
 	}

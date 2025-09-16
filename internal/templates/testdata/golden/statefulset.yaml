@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: devenv-testuser
+  labels:
+    app: devenv-testuser
+    component: devenv
+spec:
+  serviceName: devenv-testuser
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devenv-testuser
+  template:
+    metadata:
+      labels:
+        app: devenv-testuser
+        component: devenv
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - node1
+                      - node2
+      priorityClassName: dev-gpu
+      serviceAccountName: k8s-launcher
+      containers:
+      - name: testuser
+        image: ubuntu:22.04
+        ports:
+        - containerPort: 22
+          name: ssh
+          protocol: TCP
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            nvidia.com/gpu: 2
+            cpu: "4"
+            memory: "16Gi"
+          requests:
+            nvidia.com/gpu: 2
+            cpu: "4"
+            memory: "16Gi"
+        env:
+        - name: USERNAME
+          value: testuser
+        - name: USER_ID
+          value: "2000"
+        - name: IS_ADMIN
+          value: "true"
+        envFrom:
+        - configMapRef:
+            name: env-vars-testuser
+        - configMapRef:
+            name: user-config-testuser
+        volumeMounts:
+        - name: dev-storage
+          mountPath: /home/testuser
+        - name: dev-linuxbrew  
+          mountPath: /home/linuxbrew
+        - name: startup-scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: ssh-keys
+          mountPath: /home/testuser/.ssh
+          readOnly: true
+        - name: data-volume
+          mountPath: /data
+        - name: config-volume
+          mountPath: /config
+        securityContext:
+          runAsUser: 2000
+          runAsGroup: 2000
+      volumes:
+      - name: dev-storage
+        hostPath:
+          path: /mnt/devenv/testuser/homedir
+          type: DirectoryOrCreate
+      - name: dev-linuxbrew
+        hostPath:
+          path: /mnt/devenv/testuser/linuxbrew  
+          type: DirectoryOrCreate
+      - name: startup-scripts
+        configMap:
+          name: startup-scripts-testuser
+          defaultMode: 0755
+      - name: ssh-keys
+        secret:
+          secretName: ssh-keys-testuser
+          defaultMode: 0600
+      - name: data-volume
+        hostPath:
+          path: /mnt/data
+          type: Directory
+      - name: config-volume
+        hostPath:
+          path: /mnt/config
+          type: Directory

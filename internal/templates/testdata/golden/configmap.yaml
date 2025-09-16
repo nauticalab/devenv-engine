@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-config-testuser
+  labels:
+    app: devenv-testuser
+data:
+  username: "testuser"
+  user-id: "2000"
+  is-admin: "true"
+  git-name: "Test User"
+  git-email: "testuser@example.com"
+  ssh-keys: |
+    ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... testuser@example.com
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... testuser2@example.com
+  python-packages: |
+    numpy
+    pandas
+  apt-packages: |
+    vim
+    curl

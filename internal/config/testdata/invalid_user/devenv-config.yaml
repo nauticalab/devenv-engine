@@ -1,0 +1,2 @@
+# Missing required name field
+sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... invalid@example.com"

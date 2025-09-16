@@ -1,0 +1,22 @@
+name: "testuser"
+sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... testuser@example.com"
+sshPort: 30001
+uid: 2000
+git:
+  name: "Test User"
+  email: "testuser@example.com"
+resources:
+  cpu: 4
+  memory: "16Gi"
+  gpu: 1
+packages:
+  python:
+    - "numpy"
+    - "pandas"
+  apt:
+    - "vim"
+    - "git"
+volumes:
+  - name: "data"
+    localPath: "/mnt/data"
+    containerPath: "/data"
