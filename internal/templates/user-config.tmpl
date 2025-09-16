@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-config
+data:
+  username: "{{.Name}}"
+  user-id: "{{.GetUserID}}"
+  is-admin: "{{.IsAdmin}}"
+  ssh-keys: |
+{{- range .GetSSHKeysSlice}}
+    {{.}}
+{{- end}}
+  python-packages: |
+{{- range .Packages.Python}}
+    {{.}}
+{{- end}}
+  apt-packages: |
+{{- range .Packages.APT}}
+    {{.}}
+{{- end}}

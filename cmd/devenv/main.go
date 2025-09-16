@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/walkerlab/devenv-engine/internal/config"
-
 	"github.com/spf13/cobra"
+	"github.com/walkerlab/devenv-engine/internal/config"
+	"github.com/walkerlab/devenv-engine/internal/templates"
 )
 
 // Build-time variables (will be set by build system later)
@@ -88,9 +88,68 @@ Examples:
 				printConfigSummary(cfg)
 			}
 
-			// TODO: implement manifest generation
+			if !dryRun {
+				if err := generateManifests(cfg, output); err != nil {
+					fmt.Fprintf(os.Stderr, "Error generating manifests: %v\n", err)
+					os.Exit(1)
+				}
+			} else {
+				fmt.Printf("🔍 Dry run - would generate manifests to: %s\n", output)
+			}
+
 		}
 	},
+}
+
+// Version subcommand
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Show version information",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("devenv version %s\n", version)
+
+		if verbose {
+			fmt.Printf("  Build time: %s\n", buildTime)
+			fmt.Printf("  Git commit: %s\n", gitCommit)
+		}
+	},
+}
+
+func init() {
+	// Add subcommands to root
+	rootCmd.AddCommand(generateCmd)
+	rootCmd.AddCommand(versionCmd)
+
+	// Global flags
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
+
+	// Generate command specific flags
+	generateCmd.Flags().StringVarP(&output, "output", "o", "./build", "Output directory for generated manifests")
+	generateCmd.Flags().StringVar(&configDir, "config-dir", "./developers", "Directory containing developer configuration files")
+
+	generateCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be generated without creating files")
+	generateCmd.Flags().BoolVar(&allDevs, "all-developers", false, "Generate manifests for all developers")
+}
+
+func main() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+// generateManifests creates Kubernetes manifests for a developer
+func generateManifests(cfg *config.DevEnvConfig, outputDir string) error {
+	// Create template renderer
+	renderer := templates.NewRenderer(outputDir)
+
+	if err := renderer.RenderTemplate("user-config", cfg); err != nil {
+		return fmt.Errorf("failed to render user-config template: %w", err)
+	}
+
+	fmt.Printf("🎉 Successfully generated manifests for %s\n", cfg.Name)
+
+	return nil
 }
 
 // Helper function to print config summary
@@ -137,42 +196,5 @@ func formatCPU(cpu any) string {
 		return fmt.Sprintf("%.0f", v)
 	default:
 		return fmt.Sprintf("%v", v) // Fallback
-	}
-}
-
-// Version subcommand
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Show version information",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("devenv version %s\n", version)
-
-		if verbose {
-			fmt.Printf("  Build time: %s\n", buildTime)
-			fmt.Printf("  Git commit: %s\n", gitCommit)
-		}
-	},
-}
-
-func init() {
-	// Add subcommands to root
-	rootCmd.AddCommand(generateCmd)
-	rootCmd.AddCommand(versionCmd)
-
-	// Global flags
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
-
-	// Generate command specific flags
-	generateCmd.Flags().StringVarP(&output, "output", "o", "./build", "Output directory for generated manifests")
-	generateCmd.Flags().StringVar(&configDir, "config-dir", "./developers", "Directory containing developer configuration files")
-
-	generateCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be generated without creating files")
-	generateCmd.Flags().BoolVar(&allDevs, "all-developers", false, "Generate manifests for all developers")
-}
-
-func main() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
 	}
 }

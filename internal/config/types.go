@@ -1,5 +1,7 @@
 package config
 
+import "fmt"
+
 // DevEnvConfig represents the complete configuration for a developer environment
 type DevEnvConfig struct {
 	Name         string         `yamle:"name"`
@@ -17,10 +19,6 @@ type DevEnvConfig struct {
 	Volumes      []VolumeMount  `yaml:"volumes,omitempty"`
 	Refresh      RefreshConfig  `yaml:"refresh,omitempty"`
 	developerDir string         `yaml:"-"` // Directory where the developer config is located
-}
-
-func (c *DevEnvConfig) GetDeveloperDir() string {
-	return c.developerDir
 }
 
 // GitConfig represents Git-related configuration
@@ -57,4 +55,26 @@ type RefreshConfig struct {
 	Schedule     string `yaml:"schedule,omitempty"` // Cron format
 	Type         string `yaml:"type,omitempty"`
 	PreserveHome bool   `yaml:"preserveHome,omitempty"`
+}
+
+// GetDeveloperDir returns the path tot he developer's directory
+func (c *DevEnvConfig) GetDeveloperDir() string {
+	return c.developerDir
+}
+
+func (c *DevEnvConfig) GetUserID() string {
+	if c.UID != 0 {
+		return fmt.Sprintf("%d", c.UID)
+	}
+	return "1000"
+}
+
+// GetSSHKeysSlice returns SSH keys as a slice for template use
+// This is needed because templates can't handle the error return from GetSSHKeys()
+func (c *DevEnvConfig) GetSSHKeysSlice() []string {
+	keys, err := c.GetSSHKeys()
+	if err != nil {
+		return []string{} // Return empty slice on error
+	}
+	return keys
 }
