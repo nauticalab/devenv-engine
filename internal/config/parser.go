@@ -74,6 +74,9 @@ func normalizeSSHKeys(sshKeyField any) ([]string, error) {
 		}
 		return []string{keys}, nil
 	case []any:
+		if len(keys) == 0 {
+			return nil, fmt.Errorf("SSH key array cannot be empty")
+		}
 		// Multiple SSH keys as interface slice
 		result := make([]string, len(keys))
 		for i, key := range keys {
