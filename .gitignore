@@ -1,6 +1,10 @@
 # Example devenv config files
 developers/
 
+# Ignore temporary test files and output files
+**/testdata/temp/
+**/testdata/output/
+
 # Task cache files
 .task/
 
