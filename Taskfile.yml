@@ -24,3 +24,8 @@ tasks:
     desc: Run tests
     cmds:
       - go test ./...
+
+  doc:
+    desc: Launch pkgsite documentation server
+    cmds:
+      - pkgsite -open
