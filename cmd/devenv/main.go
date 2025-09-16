@@ -1,3 +1,14 @@
+// DevEnv CLI generates Kubernetes manifests for developer environments.
+// This command-line tool processes YAML configurations and creates complete
+// Kubernetes resources including StatefulSets, Services, and ConfigMaps.
+//
+// Basic usage:
+//
+//	devenv generate eywalker
+//	devenv generate --all-developers
+//	devenv validate eywalker
+//
+// Use --help with any command for detailed usage information.
 package main
 
 import (
