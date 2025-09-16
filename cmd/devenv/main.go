@@ -21,7 +21,7 @@ var (
 	verbose bool
 
 	// Command-specific flags
-	output    string
+	outputDir string
 	configDir string // Input directory for developer configs
 	dryRun    bool
 	allDevs   bool
@@ -63,14 +63,14 @@ Examples:
 		if allDevs {
 			fmt.Println("Generating manifests for all developers...")
 			if verbose {
-				fmt.Printf("Output directory: %s\n", output)
+				fmt.Printf("Output directory: %s\n", outputDir)
 			}
 			// TODO: implement all developers logic
 		} else {
 			developerName := args[0]
 			fmt.Printf("Generating manifests for developer: %s\n", developerName)
 			if verbose {
-				fmt.Printf("Output directory: %s\n", output)
+				fmt.Printf("Output directory: %s\n", outputDir)
 				fmt.Printf("Config directory: %s\n", configDir)
 				fmt.Printf("Dry run mode: %t\n", dryRun)
 			}
@@ -83,18 +83,18 @@ Examples:
 			fmt.Printf("✅ Successfully loaded configuration for developer: %s\n", cfg.Name)
 
 			if verbose {
-				fmt.Printf("Output directory: %s\n", output)
+				fmt.Printf("Output directory: %s\n", outputDir)
 				fmt.Printf("Dry run mode: %t\n", dryRun)
 				printConfigSummary(cfg)
 			}
 
 			if !dryRun {
-				if err := generateManifests(cfg, output); err != nil {
+				if err := generateManifests(cfg, outputDir); err != nil {
 					fmt.Fprintf(os.Stderr, "Error generating manifests: %v\n", err)
 					os.Exit(1)
 				}
 			} else {
-				fmt.Printf("🔍 Dry run - would generate manifests to: %s\n", output)
+				fmt.Printf("🔍 Dry run - would generate manifests to: %s\n", outputDir)
 			}
 
 		}
@@ -124,7 +124,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 
 	// Generate command specific flags
-	generateCmd.Flags().StringVarP(&output, "output", "o", "./build", "Output directory for generated manifests")
+	generateCmd.Flags().StringVarP(&outputDir, "output", "o", "./build", "Output directory for generated manifests")
 	generateCmd.Flags().StringVar(&configDir, "config-dir", "./developers", "Directory containing developer configuration files")
 
 	generateCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be generated without creating files")
@@ -143,8 +143,9 @@ func generateManifests(cfg *config.DevEnvConfig, outputDir string) error {
 	// Create template renderer
 	renderer := templates.NewRenderer(outputDir)
 
-	if err := renderer.RenderTemplate("user-config", cfg); err != nil {
-		return fmt.Errorf("failed to render user-config template: %w", err)
+	// Render all main templates
+	if err := renderer.RenderAll(cfg); err != nil {
+		return fmt.Errorf("failed to render templates: %w", err)
 	}
 
 	fmt.Printf("🎉 Successfully generated manifests for %s\n", cfg.Name)

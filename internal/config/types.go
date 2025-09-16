@@ -21,6 +21,14 @@ type DevEnvConfig struct {
 	developerDir string         `yaml:"-"` // Directory where the developer config is located
 }
 
+var DefaultValue = struct {
+	CPU    int
+	Memory string
+}{
+	CPU:    2,
+	Memory: "8Gi",
+}
+
 // GitConfig represents Git-related configuration
 type GitConfig struct {
 	Name  string `yaml:"name,omitempty"`
@@ -69,6 +77,54 @@ func (c *DevEnvConfig) GetUserID() string {
 	return "1000"
 }
 
+func (c *DevEnvConfig) GPU() int {
+	return c.Resources.GPU
+}
+
+func (c *DevEnvConfig) CPU() string {
+	// CPU can be string or number
+	defaultCPU := fmt.Sprintf("%d", DefaultValue.CPU)
+	if c.Resources.CPU == nil {
+		return defaultCPU
+	}
+	switch v := c.Resources.CPU.(type) {
+	case string:
+		if v == "" {
+			return defaultCPU
+		}
+		return v
+	case int:
+		return fmt.Sprintf("%d", v)
+	case float64:
+		return fmt.Sprintf("%.0f", v)
+	default:
+		return defaultCPU
+	}
+}
+
+func (c *DevEnvConfig) Memory() string {
+	if c.Resources.Memory == "" {
+		return DefaultValue.Memory
+	}
+	return c.Resources.Memory
+}
+
+func (c *DevEnvConfig) CPURequest() string {
+	return c.CPU()
+}
+
+func (c *DevEnvConfig) MemoryRequest() string {
+	return c.Memory()
+}
+
+func (c *DevEnvConfig) NodePort() int {
+	return c.SSHPort
+}
+
+func (c *DevEnvConfig) VolumeMounts() []VolumeMount {
+	return c.Volumes
+}
+
 // GetSSHKeysSlice returns SSH keys as a slice for template use
 // This is needed because templates can't handle the error return from GetSSHKeys()
 func (c *DevEnvConfig) GetSSHKeysSlice() []string {
@@ -77,4 +133,17 @@ func (c *DevEnvConfig) GetSSHKeysSlice() []string {
 		return []string{} // Return empty slice on error
 	}
 	return keys
+}
+
+// GetSSHKeysString returns all SSH keys as a single newline-separated string for templates
+func (c *DevEnvConfig) GetSSHKeysString() string {
+	keys := c.GetSSHKeysSlice()
+	result := ""
+	for i, key := range keys {
+		if i > 0 {
+			result += "\n"
+		}
+		result += key
+	}
+	return result
 }

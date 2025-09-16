@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: devenv-{{.Name}}
+  labels:
+    app: devenv-{{.Name}}
+    component: devenv
+spec:
+  serviceName: devenv-{{.Name}}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devenv-{{.Name}}
+  template:
+    metadata:
+      labels:
+        app: devenv-{{.Name}}
+        component: devenv
+    spec:
+{{- if gt (len .TargetNodes) 0}}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+{{- range .TargetNodes}}
+                      - {{.}}
+{{- end}}
+{{- end}}
+{{- if gt (.GPU) 0}}
+      priorityClassName: dev-gpu
+{{- end}}
+{{- if .IsAdmin}}
+      serviceAccountName: k8s-launcher
+{{- end}}
+      containers:
+      - name: {{.Name}}
+{{- if .Image}}
+        image: {{.CustomImage}}
+{{- else}}
+        image: ubuntu:22.04
+{{- end}}
+        ports:
+        - containerPort: 22
+          name: ssh
+          protocol: TCP
+{{- if ne .HTTPPort 0}}
+        - containerPort: {{.HTTPPort}}
+          name: http
+          protocol: TCP
+{{- end}}
+        resources:
+          limits:
+{{- if gt (.GPU) 0}}
+            nvidia.com/gpu: {{.GPU}}
+{{- end}}
+{{- if ne (.CPU) "unlimited"}}
+            cpu: "{{.CPU}}"
+{{- end}}
+{{- if ne (.Memory) "unlimited"}}
+            memory: "{{.Memory}}"
+{{- end}}
+          requests:
+{{- if gt (.GPU) 0}}
+            nvidia.com/gpu: {{.GPU}}
+{{- end}}
+{{- if ne (.CPURequest) "unlimited"}}
+            cpu: "{{.CPURequest}}"
+{{- end}}
+{{- if ne (.MemoryRequest) "unlimited"}}
+            memory: "{{.MemoryRequest}}"
+{{- end}}
+        env:
+        - name: USERNAME
+          value: {{.Name}}
+        - name: USER_ID
+          value: "{{if .UID}}{{.UID}}{{else}}1000{{end}}"
+        - name: IS_ADMIN
+          value: "{{.IsAdmin}}"
+        envFrom:
+        - configMapRef:
+            name: env-vars-{{.Name}}
+        - configMapRef:
+            name: user-config-{{.Name}}
+        volumeMounts:
+        - name: dev-storage
+          mountPath: /home/{{.Name}}
+        - name: dev-linuxbrew  
+          mountPath: /home/linuxbrew
+        - name: startup-scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: ssh-keys
+          mountPath: /home/{{.Name}}/.ssh
+          readOnly: true
+{{- range .Volumes}}
+        - name: {{.Name}}
+          mountPath: {{.ContainerPath}}
+{{- end}}
+        securityContext:
+          runAsUser: {{if .UID}}{{.UID}}{{else}}1000{{end}}
+          runAsGroup: {{if .UID}}{{.UID}}{{else}}1000{{end}}
+      volumes:
+      - name: dev-storage
+        hostPath:
+          path: /mnt/devenv/{{.Name}}/homedir
+          type: DirectoryOrCreate
+      - name: dev-linuxbrew
+        hostPath:
+          path: /mnt/devenv/{{.Name}}/linuxbrew  
+          type: DirectoryOrCreate
+      - name: startup-scripts
+        configMap:
+          name: startup-scripts-{{.Name}}
+          defaultMode: 0755
+      - name: ssh-keys
+        secret:
+          secretName: ssh-keys-{{.Name}}
+          defaultMode: 0600
+{{- range .Volumes}}
+      - name: {{.Name}}
+        hostPath:
+          path: {{.LocalPath}}
+          type: Directory
+{{- end}}
