@@ -9,6 +9,16 @@ import (
 )
 
 // LoadDeveloperConfig loads and parses a developer's configuration file
+// from the specified directory. It reads the devenv-config.yaml file from
+// the developer's subdirectory, validates the configuration, and returns
+// a populated DevEnvConfig struct.
+//
+// The function expects the configuration file to exist at:
+// {configDir}/{developerName}/devenv-config.yaml
+//
+// Returns an error if the configuration file doesn't exist, cannot be read,
+// contains invalid YAML, or fails validation (missing required fields,
+// invalid SSH key format, etc.).
 func LoadDeveloperConfig(configDir, developerName string) (*DevEnvConfig, error) {
 	developerDir := filepath.Join(configDir, developerName)
 	configPath := filepath.Join(developerDir, "devenv-config.yaml")
@@ -101,9 +111,4 @@ func normalizeSSHKeys(sshKeyField any) ([]string, error) {
 	default:
 		return nil, fmt.Errorf("SSH key field must be either a string or array of strings")
 	}
-}
-
-// GetSSHKeys returns the SSH keys as a normalized string slice
-func (c *DevEnvConfig) GetSSHKeys() ([]string, error) {
-	return normalizeSSHKeys(c.SSHPublicKey)
 }
