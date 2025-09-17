@@ -72,7 +72,7 @@ func generateSingleDeveloper(developerName string) {
 		fmt.Printf("Dry run mode: %t\n", dryRun)
 	}
 
-	cfg, err := config.LoadDeveloperConfig(configDir, developerName)
+	cfg, err := config.LoadDeveloperConfigWithGlobals(configDir, developerName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading config for developer %s: %v\n", developerName, err)
 		os.Exit(1)

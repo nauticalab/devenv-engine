@@ -51,6 +51,26 @@ func LoadDeveloperConfig(configDir, developerName string) (*DevEnvConfig, error)
 
 }
 
+// LoadDeveloperConfigWithGlobals loads a developer config and merges it with global defaults
+func LoadDeveloperConfigWithGlobals(configDir, developerName string) (*DevEnvConfig, error) {
+	// Load global configuration first
+	globalConfig, err := LoadGlobalConfig(configDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load global config: %w", err)
+	}
+
+	// Load developer-specific configuration
+	developerConfig, err := LoadDeveloperConfig(configDir, developerName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Merge global defaults with user config
+	mergedConfig := MergeConfigs(globalConfig, developerConfig)
+
+	return mergedConfig, nil
+}
+
 // validateConfig performs basic validation on the configuration
 func validateConfig(config *DevEnvConfig) error {
 	if config.Name == "" {

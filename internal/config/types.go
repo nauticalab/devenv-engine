@@ -27,18 +27,20 @@ type DevEnvConfig struct {
 	developerDir string         `yaml:"-"` // Directory where the developer config is located
 }
 
-// DefaultValue holds default resource allocation values for developer environments.
+// SystemDefaults holds default resource allocation values for developer environments.
 // These values are used as fallbacks when resources are not specified in individual
 // developer configurations. In future versions, these defaults will be configurable
 // through global configuration files.
-var DefaultValue = struct {
+var SystemDefaults = struct {
 	CPU    int
 	Memory string
 	UID    int
+	Image  string
 }{
 	CPU:    2,
 	Memory: "8Gi",
 	UID:    1000,
+	Image:  "ubuntu:22.04", // TODO: consider more sensible default
 }
 
 // GitConfig represents Git-related configuration
@@ -108,7 +110,7 @@ func (c *DevEnvConfig) GPU() int {
 // in the developer's configuration.
 func (c *DevEnvConfig) CPU() string {
 	// CPU can be string or number
-	defaultCPU := fmt.Sprintf("%d", DefaultValue.CPU)
+	defaultCPU := fmt.Sprintf("%d", SystemDefaults.CPU)
 	if c.Resources.CPU == nil {
 		return defaultCPU
 	}
@@ -132,7 +134,7 @@ func (c *DevEnvConfig) CPU() string {
 // if no memory allocation is specified in the developer's configuration.
 func (c *DevEnvConfig) Memory() string {
 	if c.Resources.Memory == "" {
-		return DefaultValue.Memory
+		return SystemDefaults.Memory
 	}
 	return c.Resources.Memory
 }
