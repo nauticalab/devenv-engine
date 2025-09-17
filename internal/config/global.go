@@ -36,7 +36,16 @@ func (c *GlobalConfig) GetSSHKeys() ([]string, error) {
 // If the file doesn't exist, returns an empty GlobalConfig without error.
 func LoadGlobalConfig(configDir string) (*GlobalConfig, error) {
 	globalConfigPath := filepath.Join(configDir, "devenv.yaml")
+	return loadGlobalConfigFromPath(globalConfigPath)
+}
 
+// Add new function that accepts full path (for future flexibility)
+func LoadGlobalConfigFromPath(globalConfigPath string) (*GlobalConfig, error) {
+	return loadGlobalConfigFromPath(globalConfigPath)
+}
+
+// Extract common logic
+func loadGlobalConfigFromPath(globalConfigPath string) (*GlobalConfig, error) {
 	// Check if global config exists
 	if _, err := os.Stat(globalConfigPath); os.IsNotExist(err) {
 		// Return empty global config if file doesn't exist - this is not an error
