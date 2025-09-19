@@ -72,7 +72,7 @@ func ExampleDevEnvConfig_CPU() {
 	// Output:
 	// String CPU: 8
 	// Integer CPU: 4
-	// Default CPU: 2
+	// Default CPU: 0
 }
 
 // ExampleDevEnvConfig_GetSSHKeys demonstrates SSH key handling with

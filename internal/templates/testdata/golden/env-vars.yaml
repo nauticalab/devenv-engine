@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: testuser-env-vars
+  labels:
+    app: devenv-testuser
+data:
+  USER: "testuser"
+  UID: "2000"
+  GIT_NAME: "Test User"
+  GIT_EMAIL: "testuser@example.com"

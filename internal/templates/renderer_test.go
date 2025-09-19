@@ -57,7 +57,7 @@ func TestRenderTemplate(t *testing.T) {
 		},
 	}
 
-	templates := []string{"statefulset", "service", "configmap", "secret"}
+	templates := []string{"statefulset", "service", "secret", "env-vars", "startup-scripts"}
 
 	for _, templateName := range templates {
 		t.Run(templateName, func(t *testing.T) {
