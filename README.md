@@ -14,7 +14,7 @@ DevEnv Engine provides a command-line interface and library for:
 
 ### Prerequisites
 
-- Go 1.18+
+- Go 1.24+
 - Kubernetes cluster
 - kubectl
 - git
