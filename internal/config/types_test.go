@@ -402,4 +402,4 @@ func TestResourceConfig_FlexibleCPU(t *testing.T) {
 
 // Command-line flag for updating golden files
 // Usage: go test -v ./internal/templates -update-golden
-var updateGolden = flag.Bool("update-golden", false, "update golden files")
+var _ = flag.Bool("update-golden", false, "update golden files")
