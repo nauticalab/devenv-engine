@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: testuser-env-vars
+  name: env-vars-testuser
   labels:
     app: devenv-testuser
 data:

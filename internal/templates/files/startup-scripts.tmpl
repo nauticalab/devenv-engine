@@ -1,70 +1,18 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{.Name}}-container-startup
+  name: startup-scripts-{{.Name}}
   labels:
     app: devenv-{{.Name}}
 data:
+  # Templated script - processed with config values
   startup.sh: |
-    #!/bin/bash
-    # Container startup script for developer environment: {{.Name}}
-    set -e
-    
-    # === ENVIRONMENT SETUP ===
-    TARGET_UID={{.GetUserID}}
-    TARGET_GID={{.GetUserID}}
-    DEV_USERNAME="{{.Name}}"
-    
-    # Configuration flags
-    CLEAR_LOCAL_PACKAGES="false"
-    CLEAR_VSCODE_SERVER_CACHE="false"
-    INSTALL_HOMEBREW="true"
-    IS_ADMIN="{{.IsAdmin}}"
-    
-    # Path configuration
-    PYTHON_BIN_PATH="/opt/venv/bin"
-    PYTHON_PATH="${PYTHON_BIN_PATH}/python3"
-    ENV_INIT_SCRIPT="/home/${DEV_USERNAME}/.devenv_init.sh"
-    ENV_BASH_SCRIPT="/home/${DEV_USERNAME}/.devenv_bash.sh"
-    
-    echo "Starting container setup for user: ${DEV_USERNAME} (UID: ${TARGET_UID})"
-    
-    # === SYSTEM PACKAGE INSTALLATION ===
-    echo "Installing core system packages..."
-    apt-get update
-    apt-get install -y sudo openssh-server
-    
-    # Install Homebrew dependencies if Homebrew will be installed
-    if [ "${INSTALL_HOMEBREW}" = "true" ]; then
-        echo "Installing Homebrew dependencies"
-        apt-get install -y curl git build-essential file procps ca-certificates
-    fi
-    
-    echo "Section 1: Environment and system setup complete"
-    
-    # === USER MANAGEMENT ===
-    echo "Setting up user: ${DEV_USERNAME}"
-    
-    # Create/rename group with target GID
-    if id -g ${TARGET_GID} &>/dev/null; then
-        echo "Renaming group ${TARGET_GID} to ${DEV_USERNAME}"
-        groupmod -n ${DEV_USERNAME} $(id -gn ${TARGET_GID})
-    else
-        echo "Adding group ${DEV_USERNAME} with GID ${TARGET_GID}"
-        groupadd -g ${TARGET_GID} ${DEV_USERNAME}
-    fi
-    
-    # Create/rename user with target UID
-    if id -u ${TARGET_UID} &>/dev/null; then
-        echo "Renaming user ${TARGET_UID} to ${DEV_USERNAME}"
-        usermod -l ${DEV_USERNAME} -s /bin/bash -d /home/${DEV_USERNAME} -g ${TARGET_GID} $(id -un ${TARGET_UID})
-    else
-        echo "Adding user ${DEV_USERNAME} with UID ${TARGET_UID}"
-        useradd -u ${TARGET_UID} -m -s /bin/bash ${DEV_USERNAME}
-    fi
-    
-    # Ensure home directory exists and has correct ownership
-    mkdir -p "/home/${DEV_USERNAME}"
-    chown ${DEV_USERNAME}:${DEV_USERNAME} "/home/${DEV_USERNAME}"
-    
-    echo "Section 2: User management complete"
+{{getTemplatedScript "startup.sh" . | indent 4}}
+  
+  # Static utility scripts - included as-is
+  run_with_git.sh: |
+{{getStaticScript "run_with_git.sh" | indent 4}}
+  
+  # Static requirements file
+  requirements.txt: |
+{{getStaticScript "requirements.txt" | indent 4}}

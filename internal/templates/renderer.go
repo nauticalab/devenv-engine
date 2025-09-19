@@ -6,17 +6,22 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/walkerlab/devenv-engine/internal/config"
 )
 
-// Embed all templates at compile time
+// Embed all templates and scripts at compile time
 //
 //go:embed files/*.tmpl
 var templates embed.FS
 
-var templatesToRender = []string{"statefulset", "service", "env-vars", "startup-scripts", "secret"}
+//go:embed scripts/templated/*
+var templatedScripts embed.FS
+
+//go:embed scripts/static/*
+var staticScripts embed.FS
 
 // Renderer handles template operations
 type Renderer struct {
@@ -35,11 +40,41 @@ func templateFuncs() template.FuncMap {
 		"b64enc": func(s string) string {
 			return base64.StdEncoding.EncodeToString([]byte(s))
 		},
+		"indent": func(spaces int, s string) string {
+			padding := strings.Repeat(" ", spaces)
+			return strings.ReplaceAll(s, "\n", "\n"+padding)
+		},
+		"getTemplatedScript": func(scriptName string, config *config.DevEnvConfig) (string, error) {
+			// Read the template content
+			content, err := templatedScripts.ReadFile(fmt.Sprintf("scripts/templated/%s", scriptName))
+			if err != nil {
+				return "", fmt.Errorf("failed to read templated script %s: %w", scriptName, err)
+			}
+
+			// Parse and execute template with config
+			tmpl, err := template.New(scriptName).Funcs(templateFuncs()).Parse(string(content))
+			if err != nil {
+				return "", fmt.Errorf("failed to parse script template %s: %w", scriptName, err)
+			}
+
+			var output strings.Builder
+			if err := tmpl.Execute(&output, config); err != nil {
+				return "", fmt.Errorf("failed to render script template %s: %w", scriptName, err)
+			}
+
+			return output.String(), nil
+		},
+		"getStaticScript": func(scriptName string) (string, error) {
+			content, err := staticScripts.ReadFile(fmt.Sprintf("scripts/static/%s", scriptName))
+			if err != nil {
+				return "", fmt.Errorf("failed to read static script %s: %w", scriptName, err)
+			}
+			return string(content), nil
+		},
 	}
 }
 
 func (r *Renderer) RenderTemplate(templateName string, config *config.DevEnvConfig) error {
-
 	// Get the template content from embedded files
 	templateContent, err := templates.ReadFile(fmt.Sprintf("files/%s.tmpl", templateName))
 	if err != nil {
@@ -68,7 +103,7 @@ func (r *Renderer) RenderTemplate(templateName string, config *config.DevEnvConf
 	}
 	defer outputFile.Close()
 
-	// Execute template with DevEnvConfig
+	// Execute template with DevEnvConfig - simple and clean!
 	if err := tmpl.Execute(outputFile, config); err != nil {
 		return fmt.Errorf("failed to render template %s: %w", templateName, err)
 	}
@@ -78,6 +113,7 @@ func (r *Renderer) RenderTemplate(templateName string, config *config.DevEnvConf
 }
 
 func (r *Renderer) RenderAll(config *config.DevEnvConfig) error {
+	templatesToRender := []string{"statefulset", "service", "env-vars", "secret", "startup-scripts", "env-setup"}
 	for _, templateName := range templatesToRender {
 		if err := r.RenderTemplate(templateName, config); err != nil {
 			return fmt.Errorf("failed to render template %s: %w", templateName, err)

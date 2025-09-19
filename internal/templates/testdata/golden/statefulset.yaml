@@ -29,6 +29,7 @@ spec:
                       - node2
       priorityClassName: dev-gpu
       serviceAccountName: k8s-launcher
+
       containers:
       - name: testuser
         image: ubuntu:22.04
@@ -58,8 +59,11 @@ spec:
         envFrom:
         - configMapRef:
             name: env-vars-testuser
-        - configMapRef:
-            name: user-config-testuser
+
+        securityContext:
+          runAsUser: 2000
+          runAsGroup: 2000
+            
         volumeMounts:
         - name: dev-storage
           mountPath: /home/testuser
@@ -68,6 +72,9 @@ spec:
         - name: startup-scripts
           mountPath: /scripts
           readOnly: true
+        - name: env-setup
+          mountPath: /env-setup
+          readOnly: true
         - name: ssh-keys
           mountPath: /home/testuser/.ssh
           readOnly: true
@@ -75,9 +82,7 @@ spec:
           mountPath: /data
         - name: config-volume
           mountPath: /config
-        securityContext:
-          runAsUser: 2000
-          runAsGroup: 2000
+
       volumes:
       - name: dev-storage
         hostPath:
@@ -90,6 +95,10 @@ spec:
       - name: startup-scripts
         configMap:
           name: startup-scripts-testuser
+          defaultMode: 0755
+      - name: env-setup
+        configMap:
+          name: env-setup-testuser
           defaultMode: 0755
       - name: ssh-keys
         secret:

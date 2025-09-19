@@ -17,7 +17,7 @@ spec:
         app: devenv-{{.Name}}
         component: devenv
     spec:
-{{- if gt (len .TargetNodes) 0}}
+      {{- if gt (len .TargetNodes) 0}}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -26,53 +26,52 @@ spec:
                   - key: kubernetes.io/hostname
                     operator: In
                     values:
-{{- range .TargetNodes}}
+                    {{- range .TargetNodes}}
                       - {{.}}
-{{- end}}
-{{- end}}
-{{- if gt (.GPU) 0}}
+                    {{- end}}
+      {{- end}}
+
+      {{- if gt (.GPU) 0}}
       priorityClassName: dev-gpu
-{{- end}}
-{{- if .IsAdmin}}
+      {{- end}}
+      
+      {{- if .IsAdmin}}
       serviceAccountName: k8s-launcher
-{{- end}}
+      {{- end}}
+
       containers:
       - name: {{.Name}}
-{{- if .Image}}
         image: {{.Image}}
-{{- else}}
-        image: ubuntu:22.04
-{{- end}}
         ports:
         - containerPort: 22
           name: ssh
           protocol: TCP
-{{- if ne .HTTPPort 0}}
+        {{- if ne .HTTPPort 0}}
         - containerPort: {{.HTTPPort}}
           name: http
           protocol: TCP
-{{- end}}
+        {{- end}}
         resources:
           limits:
-{{- if gt (.GPU) 0}}
+          {{- if gt (.GPU) 0}}
             nvidia.com/gpu: {{.GPU}}
-{{- end}}
-{{- if ne (.CPU) "unlimited"}}
+          {{- end}}
+          {{- if ne (.CPU) "unlimited"}}
             cpu: "{{.CPU}}"
-{{- end}}
-{{- if ne (.Memory) "unlimited"}}
+          {{- end}}
+          {{- if ne (.Memory) "unlimited"}}
             memory: "{{.Memory}}"
-{{- end}}
+          {{- end}}
           requests:
-{{- if gt (.GPU) 0}}
+          {{- if gt (.GPU) 0}}
             nvidia.com/gpu: {{.GPU}}
-{{- end}}
-{{- if ne (.CPURequest) "unlimited"}}
+          {{- end}}
+          {{- if ne (.CPURequest) "unlimited"}}
             cpu: "{{.CPURequest}}"
-{{- end}}
-{{- if ne (.MemoryRequest) "unlimited"}}
+          {{- end}}
+          {{- if ne (.MemoryRequest) "unlimited"}}
             memory: "{{.MemoryRequest}}"
-{{- end}}
+          {{- end}}
         env:
         - name: USERNAME
           value: {{.Name}}
@@ -83,8 +82,11 @@ spec:
         envFrom:
         - configMapRef:
             name: env-vars-{{.Name}}
-        - configMapRef:
-            name: user-config-{{.Name}}
+
+        securityContext:
+          runAsUser: {{if .UID}}{{.UID}}{{else}}1000{{end}}
+          runAsGroup: {{if .UID}}{{.UID}}{{else}}1000{{end}}
+            
         volumeMounts:
         - name: dev-storage
           mountPath: /home/{{.Name}}
@@ -93,16 +95,17 @@ spec:
         - name: startup-scripts
           mountPath: /scripts
           readOnly: true
+        - name: env-setup
+          mountPath: /env-setup
+          readOnly: true
         - name: ssh-keys
           mountPath: /home/{{.Name}}/.ssh
           readOnly: true
-{{- range .Volumes}}
+        {{- range .Volumes}}
         - name: {{.Name}}
           mountPath: {{.ContainerPath}}
-{{- end}}
-        securityContext:
-          runAsUser: {{if .UID}}{{.UID}}{{else}}1000{{end}}
-          runAsGroup: {{if .UID}}{{.UID}}{{else}}1000{{end}}
+        {{- end}}
+
       volumes:
       - name: dev-storage
         hostPath:
@@ -116,13 +119,17 @@ spec:
         configMap:
           name: startup-scripts-{{.Name}}
           defaultMode: 0755
+      - name: env-setup
+        configMap:
+          name: env-setup-{{.Name}}
+          defaultMode: 0755
       - name: ssh-keys
         secret:
           secretName: ssh-keys-{{.Name}}
           defaultMode: 0600
-{{- range .Volumes}}
+      {{- range .Volumes}}
       - name: {{.Name}}
         hostPath:
           path: {{.LocalPath}}
           type: Directory
-{{- end}}
+      {{- end}}
