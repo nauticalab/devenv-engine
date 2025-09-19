@@ -23,7 +23,7 @@ tasks:
   test:
     desc: Run tests
     cmds:
-      - go test ./...
+      - go test ./... {{.CLI_ARGS}}
 
   doc:
     desc: Launch pkgsite documentation server
