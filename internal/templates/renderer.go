@@ -16,6 +16,8 @@ import (
 //go:embed files/*.tmpl
 var templates embed.FS
 
+var templatesToRender = []string{"statefulset", "service", "env-vars", "startup-scripts", "secret"}
+
 // Renderer handles template operations
 type Renderer struct {
 	outputDir string
@@ -76,7 +78,6 @@ func (r *Renderer) RenderTemplate(templateName string, config *config.DevEnvConf
 }
 
 func (r *Renderer) RenderAll(config *config.DevEnvConfig) error {
-	templatesToRender := []string{"statefulset", "service", "configmap", "secret"}
 	for _, templateName := range templatesToRender {
 		if err := r.RenderTemplate(templateName, config); err != nil {
 			return fmt.Errorf("failed to render template %s: %w", templateName, err)

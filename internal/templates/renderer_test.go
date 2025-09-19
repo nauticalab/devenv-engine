@@ -16,41 +16,44 @@ func TestRenderTemplate(t *testing.T) {
 	// Create test configuration
 	testConfig := &config.DevEnvConfig{
 		Name: "testuser",
-		SSHPublicKey: []any{
-			"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... testuser@example.com",
-			"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... testuser2@example.com",
+
+		SSHPort:  30001,
+		HTTPPort: 8080,
+		BaseConfig: config.BaseConfig{
+			SSHPublicKey: []any{
+				"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... testuser@example.com",
+				"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... testuser2@example.com",
+			},
+			UID:   2000,
+			Image: "ubuntu:22.04",
+			Packages: config.PackageConfig{
+				Python: []string{"numpy", "pandas"},
+				APT:    []string{"vim", "curl"},
+			},
+			Resources: config.ResourceConfig{
+				CPU:     "4",
+				Memory:  "16Gi",
+				Storage: "100Gi",
+				GPU:     2,
+			},
+			Volumes: []config.VolumeMount{
+				{
+					Name:          "data-volume",
+					LocalPath:     "/mnt/data",
+					ContainerPath: "/data",
+				},
+				{
+					Name:          "config-volume",
+					LocalPath:     "/mnt/config",
+					ContainerPath: "/config",
+				},
+			},
 		},
-		SSHPort:     30001,
-		HTTPPort:    8080,
-		UID:         2000,
 		IsAdmin:     true,
-		Image:       "ubuntu:22.04",
 		TargetNodes: []string{"node1", "node2"},
 		Git: config.GitConfig{
 			Name:  "Test User",
 			Email: "testuser@example.com",
-		},
-		Packages: config.PackageConfig{
-			Python: []string{"numpy", "pandas"},
-			APT:    []string{"vim", "curl"},
-		},
-		Resources: config.ResourceConfig{
-			CPU:     "4",
-			Memory:  "16Gi",
-			Storage: "100Gi",
-			GPU:     2,
-		},
-		Volumes: []config.VolumeMount{
-			{
-				Name:          "data-volume",
-				LocalPath:     "/mnt/data",
-				ContainerPath: "/data",
-			},
-			{
-				Name:          "config-volume",
-				LocalPath:     "/mnt/config",
-				ContainerPath: "/config",
-			},
 		},
 	}
 
@@ -103,9 +106,11 @@ func TestRenderTemplate(t *testing.T) {
 func TestRenderAll(t *testing.T) {
 	// Create minimal test configuration
 	testConfig := &config.DevEnvConfig{
-		Name:         "minimal",
-		SSHPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... minimal@example.com",
-		SSHPort:      30002,
+		Name: "minimal",
+		BaseConfig: config.BaseConfig{
+			SSHPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... minimal@example.com",
+		},
+		SSHPort: 30002,
 	}
 
 	tempDir := t.TempDir()
@@ -116,7 +121,7 @@ func TestRenderAll(t *testing.T) {
 	require.NoError(t, err, "RenderAll should not return error")
 
 	// Verify all expected files were created
-	expectedFiles := []string{"statefulset.yaml", "service.yaml", "configmap.yaml", "secret.yaml"}
+	expectedFiles := []string{"statefulset.yaml", "service.yaml", "env-vars.yaml", "secret.yaml", "startup-scripts.yaml"}
 
 	for _, filename := range expectedFiles {
 		filePath := filepath.Join(tempDir, filename)
@@ -133,8 +138,10 @@ func TestRenderAll(t *testing.T) {
 // TestRenderTemplate_ErrorCases tests error handling in template rendering
 func TestRenderTemplate_ErrorCases(t *testing.T) {
 	testConfig := &config.DevEnvConfig{
-		Name:         "testuser",
-		SSHPublicKey: "ssh-rsa AAAAB3... testuser@example.com",
+		Name: "testuser",
+		BaseConfig: config.BaseConfig{
+			SSHPublicKey: "ssh-rsa AAAAB3... testuser@example.com",
+		},
 	}
 
 	t.Run("invalid template name", func(t *testing.T) {

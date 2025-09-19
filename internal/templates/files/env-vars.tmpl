@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{.Name}}-env-vars
+  labels:
+    app: devenv-{{.Name}}
+data:
+  USER: "{{.Name}}"
+  UID: "{{.GetUserID}}"
+  GIT_NAME: "{{.Git.Name}}"
+  GIT_EMAIL: "{{.Git.Email}}"
