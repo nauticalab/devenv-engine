@@ -43,8 +43,10 @@ func ExampleDevEnvConfig_CPU() {
 	// Example with string CPU value
 	cfg1 := &config.DevEnvConfig{
 		Name: "alice",
-		Resources: config.ResourceConfig{
-			CPU: "8", // String value
+		BaseConfig: config.BaseConfig{
+			Resources: config.ResourceConfig{
+				CPU: "8", // String value
+			},
 		},
 	}
 	fmt.Printf("String CPU: %s\n", cfg1.CPU())
@@ -52,8 +54,10 @@ func ExampleDevEnvConfig_CPU() {
 	// Example with integer CPU value
 	cfg2 := &config.DevEnvConfig{
 		Name: "bob",
-		Resources: config.ResourceConfig{
-			CPU: 4, // Integer value
+		BaseConfig: config.BaseConfig{
+			Resources: config.ResourceConfig{
+				CPU: 4, // Integer value
+			},
 		},
 	}
 	fmt.Printf("Integer CPU: %s\n", cfg2.CPU())
@@ -76,8 +80,10 @@ func ExampleDevEnvConfig_CPU() {
 func ExampleDevEnvConfig_GetSSHKeys() {
 	// Single SSH key as string
 	cfg1 := &config.DevEnvConfig{
-		Name:         "alice",
-		SSHPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB alice@example.com",
+		Name: "alice",
+		BaseConfig: config.BaseConfig{
+			SSHPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB alice@example.com",
+		},
 	}
 
 	keys1, err := cfg1.GetSSHKeys()
@@ -89,9 +95,11 @@ func ExampleDevEnvConfig_GetSSHKeys() {
 	// Multiple SSH keys as slice
 	cfg2 := &config.DevEnvConfig{
 		Name: "bob",
-		SSHPublicKey: []interface{}{
-			"ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB bob@work.com",
-			"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI bob@home.com",
+		BaseConfig: config.BaseConfig{
+			SSHPublicKey: []interface{}{
+				"ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB bob@work.com",
+				"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI bob@home.com",
+			},
 		},
 	}
 
