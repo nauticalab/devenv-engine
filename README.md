@@ -1,13 +1,13 @@
-# DevEnv Engine
+# DevENV Engine
 
 A Go-based tool for managing developer environments in Kubernetes.
 
 ## Overview
 
 DevEnv Engine provides a command-line interface and library for:
+
 - Managing developer environment configurations
 - Rendering Kubernetes manifests
-- Managing port assignments
 - Validating configurations
 
 ## Getting Started
@@ -23,7 +23,7 @@ DevEnv Engine provides a command-line interface and library for:
 
 ```bash
 # Clone the repository
-git clone https://github.com/walkerlab/devenv-engine.git
+git clone https://github.com/nauticalab/devenv-engine.git
 cd devenv-engine
 
 # Build the CLI tool
@@ -36,23 +36,18 @@ make install
 ### Basic Usage
 
 ```bash
-# List all environments
-devenv list
+# Generate DevENV manifest files from default `developers` directory, targeting user `eywalker`
+devenv generate eywalker
 
-# Create a new environment
-devenv create user-name environment-name
+# Validate configurations for a specific user
+devenv validate eywalker
 
-# Validate configurations
+# Validate all users' configurations
 devenv validate
 
-# Render Kubernetes manifests
-devenv render --output ./output
+# Generate Kubernetes manifests for a specific user
+devenv generate eywalker --output ./output
 
-## Documentation
-
-For more details, see the [documentation](docs/README.md).
-
-## License
-
-MIT License
+# Generate Kubernetes manifests for all users
+devenv generate --output ./output
 ```
