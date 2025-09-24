@@ -2,6 +2,8 @@
 
 A Go-based tool for managing developer environments in Kubernetes.
 
+Authored by NauticaLab with passion.
+
 ## Overview
 
 DevEnv Engine provides a command-line interface and library for:
