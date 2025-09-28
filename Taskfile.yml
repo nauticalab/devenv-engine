@@ -25,6 +25,11 @@ tasks:
     cmds:
       - go test ./... {{.CLI_ARGS}}
 
+  update-golden:
+    desc: Update golden files for tests
+    cmds:
+      - go test ./... -update-golden {{.CLI_ARGS}} 
+
   doc:
     desc: Launch pkgsite documentation server
     cmds:
