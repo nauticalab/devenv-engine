@@ -113,7 +113,7 @@ func (r *Renderer) RenderTemplate(templateName string, config *config.DevEnvConf
 }
 
 func (r *Renderer) RenderAll(config *config.DevEnvConfig) error {
-	templatesToRender := []string{"statefulset", "service", "env-vars", "secret", "startup-scripts", "env-setup"}
+	templatesToRender := []string{"statefulset", "service", "env-vars", "secret", "startup-scripts"}
 	for _, templateName := range templatesToRender {
 		if err := r.RenderTemplate(templateName, config); err != nil {
 			return fmt.Errorf("failed to render template %s: %w", templateName, err)

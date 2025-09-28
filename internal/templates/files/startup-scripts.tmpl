@@ -16,3 +16,7 @@ data:
   # Static requirements file
   requirements.txt: |
 {{getStaticScript "requirements.txt" | indent 4}}
+
+  # User setup script
+  setup.sh: |
+{{getTemplatedScript "user-setup.sh" . | indent 4}}
