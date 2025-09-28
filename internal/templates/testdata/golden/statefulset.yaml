@@ -72,9 +72,6 @@ spec:
         - name: startup-scripts
           mountPath: /scripts
           readOnly: true
-        - name: env-setup
-          mountPath: /env-setup
-          readOnly: true
         - name: ssh-keys
           mountPath: /home/testuser/.ssh
           readOnly: true
@@ -95,10 +92,6 @@ spec:
       - name: startup-scripts
         configMap:
           name: startup-scripts-testuser
-          defaultMode: 0755
-      - name: env-setup
-        configMap:
-          name: env-setup-testuser
           defaultMode: 0755
       - name: ssh-keys
         secret:
