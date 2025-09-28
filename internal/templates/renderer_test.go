@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/nauticalab/devenv-engine/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/walkerlab/devenv-engine/internal/config"
 )
 
 // TestRenderTemplate tests individual template rendering with golden files

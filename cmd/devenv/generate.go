@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/nauticalab/devenv-engine/internal/config"
+	"github.com/nauticalab/devenv-engine/internal/templates"
 	"github.com/spf13/cobra"
-	"github.com/walkerlab/devenv-engine/internal/config"
-	"github.com/walkerlab/devenv-engine/internal/templates"
 )
 
 // DeveloperJob represents work to be done for one developer

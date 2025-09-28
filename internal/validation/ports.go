@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/walkerlab/devenv-engine/internal/config"
+	"github.com/nauticalab/devenv-engine/internal/config"
 )
 
 const (

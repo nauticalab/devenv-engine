@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/walkerlab/devenv-engine/internal/config"
+	"github.com/nauticalab/devenv-engine/internal/config"
 )
 
 // ExampleLoadDeveloperConfig demonstrates how to load a developer's configuration
