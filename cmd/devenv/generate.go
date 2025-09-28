@@ -3,11 +3,26 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/walkerlab/devenv-engine/internal/config"
 	"github.com/walkerlab/devenv-engine/internal/templates"
 )
+
+// DeveloperJob represents work to be done for one developer
+type DeveloperJob struct {
+	Name string
+}
+
+// ProcessingResult represents the outcome of processing one developer
+type ProcessingResult struct {
+	Developer string
+	Success   bool
+	Error     error
+	Duration  time.Duration
+}
 
 var (
 	// Command-specific flags for generate
@@ -45,7 +60,7 @@ Examples:
 			if verbose {
 				fmt.Printf("Output directory: %s\n", outputDir)
 			}
-			// TODO: implement all developers logic
+			generateAllDevelopersWithProgress()
 		} else {
 			developerName := args[0]
 			generateSingleDeveloper(developerName)
@@ -62,6 +77,129 @@ func init() {
 
 }
 
+func generateAllDevelopersWithProgress() {
+	// Step 1: Discover all developers
+	developers, err := findAllDevelopers(configDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error discovering developers: %v\n", err)
+		os.Exit(1)
+	}
+
+	if len(developers) == 0 {
+		fmt.Printf("No deveolopers found in %s\n", configDir)
+		return
+	}
+
+	fmt.Printf("Found %d developers to process.\n", len(developers))
+
+	// Step 2: Set up channels for worker communication
+	const numWorkers = 4
+	jobs := make(chan DeveloperJob, len(developers))
+	results := make(chan ProcessingResult, len(developers))
+
+	// Step 3: Start worker goroutines
+	for i := 0; i < numWorkers; i++ {
+		go developerWorker(jobs, results)
+	}
+
+	// Step 4: Send all jobs to workers
+	for _, dev := range developers {
+		jobs <- DeveloperJob{Name: dev}
+	}
+	close(jobs)
+
+	// Step 5: Collect results
+	var successCount, failureCount int
+	var failures []ProcessingResult
+
+	for i := 0; i < len(developers); i++ {
+		result := <-results
+		if result.Success {
+			successCount++
+			fmt.Printf("[%d/%d] ✅ %s (%.1fs)\n",
+				i+1, len(developers), result.Developer, result.Duration.Seconds())
+		} else {
+			failureCount++
+			failures = append(failures, result)
+			fmt.Printf("[%d/%d] ❌ %s (%.1fs): %v\n",
+				i+1, len(developers), result.Developer, result.Duration.Seconds(), result.Error)
+		}
+	}
+
+	// Step 6: Print final summary
+	fmt.Printf("\n🎉 Batch processing complete!\n")
+	fmt.Printf("✅ Successful: %d\n", successCount)
+	if failureCount > 0 {
+		fmt.Printf("❌ Failed: %d\n", failureCount)
+	}
+
+	if failureCount > 0 {
+		fmt.Printf("\nFailures:\n")
+		for _, failure := range failures {
+			fmt.Printf("  - %s: %v\n", failure.Developer, failure.Error)
+		}
+		os.Exit(1) // Exit with error if any failures
+	}
+}
+
+func developerWorker(jobs <-chan DeveloperJob, results chan<- ProcessingResult) {
+	for job := range jobs {
+		startTime := time.Now()
+		err := processSingleDeveloperForBatchWithError(job.Name)
+
+		results <- ProcessingResult{
+			Developer: job.Name,
+			Success:   err == nil,
+			Error:     err,
+			Duration:  time.Since(startTime),
+		}
+	}
+}
+
+// processSingleDeveloperForBatchWithError processes a single developer for batch mode
+func processSingleDeveloperForBatchWithError(developerName string) error {
+	if verbose {
+		fmt.Printf("Processing developer: %s\n", developerName)
+	}
+
+	cfg, err := config.LoadDeveloperConfigWithGlobalDefaults(configDir, developerName)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Create user-specific output directory
+	userOutputDir := filepath.Join(outputDir, developerName)
+
+	if !dryRun {
+		if err := generateManifests(cfg, userOutputDir); err != nil {
+			return fmt.Errorf("failed to generate manifests: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func findAllDevelopers(configDir string) ([]string, error) {
+	var developers []string
+
+	entries, err := os.ReadDir(configDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			// Check to make sure devenv-config.yaml exists in this directory
+			configPath := filepath.Join(configDir, entry.Name(), "devenv-config.yaml")
+			if _, err := os.Stat(configPath); err == nil {
+				developers = append(developers, entry.Name())
+			}
+		}
+	}
+
+	return developers, nil
+}
+
 // generateSingleDeveloper handles generation for a single developer
 func generateSingleDeveloper(developerName string) {
 	fmt.Printf("Generating manifests for developer: %s\n", developerName)
@@ -71,6 +209,8 @@ func generateSingleDeveloper(developerName string) {
 		fmt.Printf("Config directory: %s\n", configDir)
 		fmt.Printf("Dry run mode: %t\n", dryRun)
 	}
+
+	userOutputDir := filepath.Join(outputDir, developerName)
 
 	cfg, err := config.LoadDeveloperConfigWithGlobalDefaults(configDir, developerName)
 	if err != nil {
@@ -85,12 +225,12 @@ func generateSingleDeveloper(developerName string) {
 	}
 
 	if !dryRun {
-		if err := generateManifests(cfg, outputDir); err != nil {
+		if err := generateManifests(cfg, userOutputDir); err != nil {
 			fmt.Fprintf(os.Stderr, "Error generating manifests: %v\n", err)
 			os.Exit(1)
 		}
 	} else {
-		fmt.Printf("🔍 Dry run - would generate manifests to: %s\n", outputDir)
+		fmt.Printf("🔍 Dry run - would generate manifests to: %s\n", userOutputDir)
 	}
 }
 
