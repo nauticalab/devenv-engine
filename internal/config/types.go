@@ -27,7 +27,7 @@ type BaseConfig struct {
 	InstallHomebrew    bool   `yaml:"installHomebrew,omitempty"`
 	ClearLocalPackages bool   `yaml:"clearLocalPackages,omitempty"`
 	ClearVSCodeCache   bool   `yaml:"clearVSCodeCache,omitempty"`
-	PythonBinPath      string `yaml:"pythonBinPath,omitempty" validate:"omitempty,min=1"`
+	PythonBinPath      string `yaml:"pythonBinPath,omitempty" validate:"omitempty,min=1,filepath"`
 }
 
 // DevEnvConfig represents the complete configuration for a developer environment.
