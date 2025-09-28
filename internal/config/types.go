@@ -28,6 +28,10 @@ type BaseConfig struct {
 	ClearLocalPackages bool   `yaml:"clearLocalPackages,omitempty"`
 	ClearVSCodeCache   bool   `yaml:"clearVSCodeCache,omitempty"`
 	PythonBinPath      string `yaml:"pythonBinPath,omitempty" validate:"omitempty,min=1,filepath"`
+	HostName           string `yaml:"hostName,omitempty" validate:"omitempty,min=1,hostname"`
+	EnableAuth         bool   `yaml:"enableAuth,omitempty"`
+	AuthURL            string `yaml:"authURL,omitempty" validate:"omitempty,min=1,url"`
+	AuthSignIn         string `yaml:"authSignIn,omitempty" validate:"omitempty,min=1,url"`
 }
 
 // DevEnvConfig represents the complete configuration for a developer environment.
