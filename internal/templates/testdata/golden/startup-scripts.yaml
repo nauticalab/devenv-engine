@@ -123,7 +123,7 @@ data:
     
     # === USER ENVIRONMENT SETUP ===
     # Set up environment for the user
-    if [ -f /env-setup/setup.sh ]; then
+    if [ -f /scripts/setup.sh ]; then
         echo "Running user environment setup script"
         sudo -u ${DEV_USERNAME} \
             GIT_USER_NAME="Test User" \
@@ -131,7 +131,7 @@ data:
             ENV_BASH_SCRIPT=${ENV_BASH_SCRIPT} \
             ENV_INIT_SCRIPT=${ENV_INIT_SCRIPT} \
             PYTHON_BIN_PATH=${PYTHON_BIN_PATH} \
-            bash /env-setup/setup.sh
+            bash /scripts/setup.sh
     fi
     
     if [ -f "${ENV_INIT_SCRIPT}" ]; then
@@ -145,9 +145,7 @@ data:
     
     # === VSCODE CONFIGURATION ===
     
-    # # Add default VSCode remote machine config, setting default python path
-    # mkdir -p /home/${DEV_USERNAME}/.vscode-server/data/Machine
-    # echo "{\"python.defaultInterpreterPath\": \"${PYTHON_PATH}\"}" > /home/${DEV_USERNAME}/.vscode-server/data/Machine/settings.json
+    
     # Make sure .vscode-server directory is owned by ${DEV_USERNAME}
     chown -R ${DEV_USERNAME}:${DEV_USERNAME} /home/${DEV_USERNAME}/.vscode-server
     
@@ -245,3 +243,85 @@ data:
     
     # Machine learning (common packages)
     scikit-learn>=1.3.0
+
+  # User setup script
+  setup.sh: |
+#!/bin/bash
+    # User environment setup script for: testuser
+    # This script runs as the developer user to configure their personal environment
+    set -e
+    
+    # Get script file names from environment
+    INIT_SCRIPT_NAME=$(basename "${ENV_INIT_SCRIPT}")
+    BASH_SCRIPT_NAME=$(basename "${ENV_BASH_SCRIPT}")
+    
+    echo "Setting up user environment for testuser"
+    
+    # === BASHRC SETUP ===
+    cat > ~/.bashrc << 'EOF_BASHRC'
+    
+    # Add the Python bin path to the PATH
+    # Ensure this takes precedence over Homebrew
+    export PATH=":${PATH}"
+    
+    # Custom aliases
+    alias ll='ls -la'
+    
+    # GPU-related settings
+    export CUDA_DEVICE_ORDER=PCI_BUS_ID
+    
+    # Run env bash script if it exists
+    if [ -f "${ENV_BASH_SCRIPT}" ]; then
+      echo "Running ${ENV_BASH_SCRIPT}" >&2
+      source ${ENV_BASH_SCRIPT}
+    fi
+    
+    # Welcome message
+    echo "                                                      " >&2
+    echo "██████╗                  ███████╗ ██╗   ███╗ ██╗   ██╗" >&2
+    echo "██╔══██╗                 ╚════██║ ██║  ████║ ██║   ██║" >&2
+    echo "██║  ██║  ████╗ ██╗   ██╗  █████║ ██║ ██ ██║ ██║   ██║" >&2
+    echo "██║  ██║ ██▄▄▄█╗╚██╗ ██╔╝  ╚══██║ ██║██╔╝██║ ╚██╗ ██╔╝" >&2
+    echo "██████╔╝ ██▄▄▄▄╗ ╚████╔╝ ███████║ ████╔╝ ██║  ╚████╔╝ " >&2
+    echo "╚═════╝  ╚═════╝  ╚═══╝  ╚══════╝ ╚═══╝  ╚═╝   ╚═══╝  " >&2
+    echo "                                                      " >&2
+    echo "Welcome to your ENIGMA DevENV, testuser!" >&2
+    echo "Place ${INIT_SCRIPT_NAME} in your home directory to customize DevENV initialization." >&2
+    echo "Edit ${BASH_SCRIPT_NAME} to customize your Shell environment" >&2
+    echo "" >&2
+    echo "If you encounter issues, please contact the administrator." >&2
+    echo "Happy dev'ing!" >&2
+    
+    EOF_BASHRC
+    
+    # === BASH PROFILE SETUP ===
+    echo "source ~/.bashrc" > ~/.bash_profile
+    
+    # === CREATE CUSTOM BASH SCRIPT ===
+    # Create env bash script file if it doesn't exist
+    if [ ! -f "${ENV_BASH_SCRIPT}" ]; then
+      cat > "${ENV_BASH_SCRIPT}" << 'EOF_BASH_CUSTOM'
+    #!/bin/bash
+    # Custom bash environment configuration
+    
+    # Add your custom environment variables and aliases here
+    EOF_BASH_CUSTOM
+      chmod +x "${ENV_BASH_SCRIPT}"
+    fi
+    
+    # === JUPYTER CONFIGURATION ===
+    mkdir -p ~/.jupyter
+    if [ ! -f ~/.jupyter/jupyter_notebook_config.py ]; then
+    cat > ~/.jupyter/jupyter_notebook_config.py << 'EOF_JUPYTER'
+    c.NotebookApp.ip = '0.0.0.0'
+    c.NotebookApp.open_browser = False
+    c.NotebookApp.port = 8888
+    EOF_JUPYTER
+    fi
+    
+    # === GIT CONFIGURATION ===
+    echo "Configuring Git for testuser"
+    git config --global user.name "${GIT_USER_NAME}"
+    git config --global user.email "${GIT_USER_EMAIL}"
+    
+    echo "User environment setup complete for testuser"
