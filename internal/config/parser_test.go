@@ -94,7 +94,7 @@ func TestLoadDeveloperConfig(t *testing.T) {
 		configPath := filepath.Join(developerDir, "devenv-config.yaml")
 		configYAML := `name: alice
 sshPublicKey:
-  - "ssh-rsa AAAAB3NzaC1yc2E... alice@example.com"
+  - "ssh-rsa AAAAB3NzaC1yc2E alice@example.com"
 sshPort: 30022
 isAdmin: true
 git:
@@ -123,7 +123,7 @@ packages:
 		// Test SSH keys
 		sshKeys, err := config.GetSSHKeys()
 		require.NoError(t, err)
-		assert.Equal(t, []string{"ssh-rsa AAAAB3NzaC1yc2E... alice@example.com"}, sshKeys)
+		assert.Equal(t, []string{"ssh-rsa AAAAB3NzaC1yc2E alice@example.com"}, sshKeys)
 
 		// Test developer directory is set
 		assert.Equal(t, developerDir, config.DeveloperDir)
@@ -144,13 +144,13 @@ packages:
 		require.NoError(t, err)
 
 		configPath := filepath.Join(developerDir, "devenv-config.yaml")
-		configYAML := `sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2E... alice@example.com"`
+		configYAML := `sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2E alice@example.com"`
 		err = os.WriteFile(configPath, []byte(configYAML), 0644)
 		require.NoError(t, err)
 
 		_, err = LoadDeveloperConfig(tempDir, "alice")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "name field is required")
+		assert.Contains(t, err.Error(), "'Name' is required")
 	})
 
 	t.Run("invalid config - missing SSH key", func(t *testing.T) {
@@ -166,7 +166,7 @@ packages:
 
 		_, err = LoadDeveloperConfig(tempDir, "alice")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "sshPublicKey field is required")
+		assert.Contains(t, err.Error(), "SSH public key is required")
 	})
 }
 
@@ -184,7 +184,7 @@ packages:
 resources:
   cpu: 4
   memory: "16Gi"
-sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2E... admin@company.com"
+sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2E admin@company.com"
 `
 		globalConfigPath := filepath.Join(tempDir, "devenv.yaml")
 		err := os.WriteFile(globalConfigPath, []byte(globalConfigYAML), 0644)
@@ -196,7 +196,7 @@ sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2E... admin@company.com"
 		require.NoError(t, err)
 
 		userConfigYAML := `name: alice
-sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2E... alice@example.com"
+sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2E alice@example.com"
 installHomebrew: false
 packages:
   apt: ["vim"]
@@ -236,8 +236,8 @@ git:
 		sshKeys, err := config.GetSSHKeys()
 		require.NoError(t, err)
 		expectedSSHKeys := []string{
-			"ssh-rsa AAAAB3NzaC1yc2E... admin@company.com", // Global
-			"ssh-rsa AAAAB3NzaC1yc2E... alice@example.com", // User
+			"ssh-rsa AAAAB3NzaC1yc2E admin@company.com", // Global
+			"ssh-rsa AAAAB3NzaC1yc2E alice@example.com", // User
 		}
 		assert.Equal(t, expectedSSHKeys, sshKeys)
 
@@ -254,7 +254,7 @@ git:
 		require.NoError(t, err)
 
 		userConfigYAML := `name: alice
-sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2E... alice@example.com"
+sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2E alice@example.com"
 installHomebrew: false
 `
 		configPath := filepath.Join(developerDir, "devenv-config.yaml")
@@ -358,11 +358,11 @@ func TestValidateConfig(t *testing.T) {
 		config := &DevEnvConfig{
 			Name: "alice",
 			BaseConfig: BaseConfig{
-				SSHPublicKey: "ssh-rsa AAAAB3NzaC1yc2E... alice@example.com",
+				SSHPublicKey: "ssh-rsa AAAAB3NzaC1yc2E alice@example.com",
 			},
 		}
 
-		err := validateConfig(config)
+		err := ValidateDevEnvConfig(config)
 		assert.NoError(t, err)
 	})
 
@@ -373,9 +373,9 @@ func TestValidateConfig(t *testing.T) {
 			},
 		}
 
-		err := validateConfig(config)
+		err := ValidateDevEnvConfig(config)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "name field is required")
+		assert.Contains(t, err.Error(), "'Name' is required")
 	})
 
 	t.Run("missing SSH public key", func(t *testing.T) {
@@ -383,9 +383,9 @@ func TestValidateConfig(t *testing.T) {
 			Name: "alice",
 		}
 
-		err := validateConfig(config)
+		err := ValidateDevEnvConfig(config)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "sshPublicKey field is required")
+		assert.Contains(t, err.Error(), "SSH public key is required")
 	})
 
 	t.Run("invalid SSH key format", func(t *testing.T) {
@@ -396,9 +396,9 @@ func TestValidateConfig(t *testing.T) {
 			},
 		}
 
-		err := validateConfig(config)
+		err := ValidateDevEnvConfig(config)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid sshPublicKey format")
+		assert.Contains(t, err.Error(), "invalid SSH key format")
 	})
 
 	t.Run("empty SSH key", func(t *testing.T) {
@@ -409,9 +409,9 @@ func TestValidateConfig(t *testing.T) {
 			},
 		}
 
-		err := validateConfig(config)
+		err := ValidateDevEnvConfig(config)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid sshPublicKey format")
+		assert.Contains(t, err.Error(), "invalid SSH key format")
 	})
 }
 
