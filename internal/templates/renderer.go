@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/walkerlab/devenv-engine/internal/config"
+	"github.com/nauticalab/devenv-engine/internal/config"
 )
 
 // Embed all templates and scripts at compile time

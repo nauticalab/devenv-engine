@@ -1,4 +1,4 @@
-module github.com/walkerlab/devenv-engine
+module github.com/nauticalab/devenv-engine
 
 go 1.24.2
 
