@@ -149,7 +149,7 @@ echo "Section 6: Package installation complete"
 
 # === USER ENVIRONMENT SETUP ===
 # Set up environment for the user
-if [ -f /env-setup/setup.sh ]; then
+if [ -f /scripts/setup.sh ]; then
     echo "Running user environment setup script"
     sudo -u ${DEV_USERNAME} \
         GIT_USER_NAME="{{.Git.Name}}" \
@@ -157,7 +157,7 @@ if [ -f /env-setup/setup.sh ]; then
         ENV_BASH_SCRIPT=${ENV_BASH_SCRIPT} \
         ENV_INIT_SCRIPT=${ENV_INIT_SCRIPT} \
         PYTHON_BIN_PATH=${PYTHON_BIN_PATH} \
-        bash /env-setup/setup.sh
+        bash /scripts/setup.sh
 fi
 
 if [ -f "${ENV_INIT_SCRIPT}" ]; then
@@ -175,9 +175,7 @@ echo "Clearing VSCode server cache"
 rm -rf /home/${DEV_USERNAME}/.vscode-server/
 {{- end}}
 
-# # Add default VSCode remote machine config, setting default python path
-# mkdir -p /home/${DEV_USERNAME}/.vscode-server/data/Machine
-# echo "{\"python.defaultInterpreterPath\": \"${PYTHON_PATH}\"}" > /home/${DEV_USERNAME}/.vscode-server/data/Machine/settings.json
+
 # Make sure .vscode-server directory is owned by ${DEV_USERNAME}
 chown -R ${DEV_USERNAME}:${DEV_USERNAME} /home/${DEV_USERNAME}/.vscode-server
 
