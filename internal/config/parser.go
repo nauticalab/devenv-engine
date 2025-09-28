@@ -66,12 +66,12 @@ func LoadDeveloperConfig(configDir, developerName string) (*DevEnvConfig, error)
 		return nil, fmt.Errorf("failed to parse YAML in %s: %w", configPath, err)
 	}
 
+	config.DeveloperDir = developerDir
+
 	// Basic validation
-	if err := validateConfig(&config); err != nil {
+	if err := config.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration in %s: %w", configPath, err)
 	}
-
-	config.DeveloperDir = developerDir
 
 	return &config, nil
 }
@@ -112,12 +112,13 @@ func LoadDeveloperConfigWithGlobalDefaults(configDir, developerName string) (*De
 	}
 
 	// Step 5: Merge additive list fields (packages, volumes, SSH keys)
+	// Note that this step is neceessary because YAML unmarshaling replaces slices
 	userConfig.mergeListFields(globalConfig)
 
 	// Step 6: Set developer directory and validate
 	userConfig.DeveloperDir = developerDir
 
-	if err := validateConfig(userConfig); err != nil {
+	if err := userConfig.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration in %s: %w", configPath, err)
 	}
 
@@ -151,29 +152,6 @@ func (config *DevEnvConfig) mergeListFields(globalConfig *BaseConfig) {
 
 	mergedSSHKeys := mergeStringSlices(globalSSHKeys, userSSHKeys)
 	config.SSHPublicKey = mergedSSHKeys
-}
-
-// validateConfig performs basic validation on the configuration
-func validateConfig(config *DevEnvConfig) error {
-	if config.Name == "" {
-		return fmt.Errorf("name field is required")
-	}
-
-	if config.SSHPublicKey == nil {
-		return fmt.Errorf("sshPublicKey field is required")
-	}
-
-	// Validate SSH keys format
-	sshKeys, err := config.GetSSHKeys()
-	if err != nil {
-		return fmt.Errorf("invalid sshPublicKey format: %w", err)
-	}
-
-	if len(sshKeys) == 0 {
-		return fmt.Errorf("at least one SSH public key is required")
-	}
-
-	return nil
 }
 
 // ============================================================================
@@ -242,54 +220,4 @@ func mergeVolumes(global, user []VolumeMount) []VolumeMount {
 	result = append(result, user...)
 
 	return result
-}
-
-// normalizeSSHKeys converts the flexible SSH key field to a string slice
-// Handles both single string and string array formats from YAML
-func normalizeSSHKeys(sshKeyField any) ([]string, error) {
-	if sshKeyField == nil {
-		return []string{}, nil
-	}
-
-	switch keys := sshKeyField.(type) {
-	case string:
-		// Single SSH key
-		if keys == "" {
-			return []string{}, fmt.Errorf("SSH key cannot be empty string")
-		}
-		return []string{keys}, nil
-
-	case []interface{}:
-		// Array of SSH keys (from YAML)
-		var result []string
-		for i, key := range keys {
-			keyStr, ok := key.(string)
-			if !ok {
-				return nil, fmt.Errorf("SSH key at index %d is not a string", i)
-			}
-			if keyStr == "" {
-				return nil, fmt.Errorf("SSH key at index %d cannot be empty", i)
-			}
-			result = append(result, keyStr)
-		}
-		if len(result) == 0 {
-			return nil, fmt.Errorf("SSH key array cannot be empty")
-		}
-		return result, nil
-
-	case []string:
-		// Direct string slice
-		if len(keys) == 0 {
-			return nil, fmt.Errorf("SSH key array cannot be empty")
-		}
-		for i, key := range keys {
-			if key == "" {
-				return nil, fmt.Errorf("SSH key at index %d cannot be empty", i)
-			}
-		}
-		return keys, nil
-
-	default:
-		return nil, fmt.Errorf("SSH key field must be string or array of strings, got %T", sshKeyField)
-	}
 }
