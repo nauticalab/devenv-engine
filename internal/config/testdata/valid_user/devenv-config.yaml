@@ -1,5 +1,5 @@
 name: "testuser"
-sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... testuser@example.com"
+sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC testuser@example.com"
 sshPort: 30001
 uid: 2000
 git:

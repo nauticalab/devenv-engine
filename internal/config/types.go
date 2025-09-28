@@ -74,8 +74,8 @@ type ResourceConfig struct {
 // VolumeMount represents a volume mount configuration
 type VolumeMount struct {
 	Name          string `yaml:"name" validate:"required,min=1,max=63,alphanum"`
-	LocalPath     string `yaml:"localPath" validate:"required,min=1,dirpath"`
-	ContainerPath string `yaml:"containerPath" validate:"required,min=1,dirpath"`
+	LocalPath     string `yaml:"localPath" validate:"required,min=1,filepath"`
+	ContainerPath string `yaml:"containerPath" validate:"required,min=1,filepath"`
 }
 
 // RefreshConfig represents auto-refresh settings

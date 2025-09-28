@@ -1,2 +1,2 @@
 name: "minimal"
-sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... minimal@example.com"
+sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC minimal@example.com"
