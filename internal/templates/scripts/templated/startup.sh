@@ -175,9 +175,9 @@ echo "Clearing VSCode server cache"
 rm -rf /home/${DEV_USERNAME}/.vscode-server/
 {{- end}}
 
-# Add default VSCode remote machine config, setting default python path
-mkdir -p /home/${DEV_USERNAME}/.vscode-server/data/Machine
-echo "{\"python.defaultInterpreterPath\": \"${PYTHON_PATH}\"}" > /home/${DEV_USERNAME}/.vscode-server/data/Machine/settings.json
+# # Add default VSCode remote machine config, setting default python path
+# mkdir -p /home/${DEV_USERNAME}/.vscode-server/data/Machine
+# echo "{\"python.defaultInterpreterPath\": \"${PYTHON_PATH}\"}" > /home/${DEV_USERNAME}/.vscode-server/data/Machine/settings.json
 # Make sure .vscode-server directory is owned by ${DEV_USERNAME}
 chown -R ${DEV_USERNAME}:${DEV_USERNAME} /home/${DEV_USERNAME}/.vscode-server
 
