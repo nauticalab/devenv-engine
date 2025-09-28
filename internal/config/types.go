@@ -10,24 +10,24 @@ import (
 // for both global configuration files and user configurations.
 type BaseConfig struct {
 	// Resource allocation
-	Image     string         `yaml:"image,omitempty"`
+	Image     string         `yaml:"image,omitempty" validate:"omitempty,min=1"`
 	Resources ResourceConfig `yaml:"resources,omitempty"`
-	UID       int            `yaml:"uid,omitempty"`
+	UID       int            `yaml:"uid,omitempty" validate:"omitempty,min=1000,max=65535"`
 
 	// Package management
 	Packages PackageConfig `yaml:"packages,omitempty"`
 
 	// Storage configuration
-	Volumes []VolumeMount `yaml:"volumes,omitempty"`
+	Volumes []VolumeMount `yaml:"volumes,omitempty" validate:"dive"`
 
 	// Access configuration
-	SSHPublicKey any `yaml:"sshPublicKey,omitempty"` // Can be string or []string
+	SSHPublicKey any `yaml:"sshPublicKey,omitempty" validate:"omitempty,ssh_keys"` // Can be string or []string
 
 	// Container setup configuration
 	InstallHomebrew    bool   `yaml:"installHomebrew,omitempty"`
 	ClearLocalPackages bool   `yaml:"clearLocalPackages,omitempty"`
 	ClearVSCodeCache   bool   `yaml:"clearVSCodeCache,omitempty"`
-	PythonBinPath      string `yaml:"pythonBinPath,omitempty"`
+	PythonBinPath      string `yaml:"pythonBinPath,omitempty" validate:"omitempty,min=1"`
 }
 
 // DevEnvConfig represents the complete configuration for a developer environment.
@@ -39,15 +39,51 @@ type DevEnvConfig struct {
 	BaseConfig `yaml:",inline"` // Embedded - all BaseConfig fields are promoted
 
 	// User-specific fields that don't belong in BaseConfig
-	Name         string        `yaml:"name"`
-	SSHPort      int           `yaml:"sshPort,omitempty"`
-	HTTPPort     int           `yaml:"httpPort,omitempty"`
+	Name         string        `yaml:"name" validate:"required,min=1,max=63,hostname"`
+	SSHPort      int           `yaml:"sshPort,omitempty" validate:"omitempty,min=30000,max=32767"`
+	HTTPPort     int           `yaml:"httpPort,omitempty" validate:"omitempty,min=1024,max=65535"`
 	IsAdmin      bool          `yaml:"isAdmin,omitempty"`
 	SkipAuth     bool          `yaml:"skipAuth,omitempty"`
-	TargetNodes  []string      `yaml:"targetNodes,omitempty"`
+	TargetNodes  []string      `yaml:"targetNodes,omitempty" validate:"dive,hostname"`
 	Git          GitConfig     `yaml:"git,omitempty"`
 	Refresh      RefreshConfig `yaml:"refresh,omitempty"`
 	DeveloperDir string        `yaml:"-"` // Directory where the developer config is located
+}
+
+// GitConfig represents Git-related configuration
+type GitConfig struct {
+	Name  string `yaml:"name,omitempty" validate:"omitempty,min=1,max=100"`
+	Email string `yaml:"email,omitempty" validate:"omitempty,email"`
+}
+
+// PackageConfig represents package installation configuration
+type PackageConfig struct {
+	Python []string `yaml:"python,omitempty" validate:"dive,min=1"`
+	APT    []string `yaml:"apt,omitempty" validate:"dive,min=1"`
+	// Consider adding other package managers such as NPM, Yarn, etc.
+}
+
+// ResourceConfig represents resource allocation
+type ResourceConfig struct {
+	CPU     any    `yaml:"cpu,omitempty" validate:"omitempty,k8s_cpu"` // Can be string or int
+	Memory  string `yaml:"memory,omitempty" validate:"omitempty,k8s_memory"`
+	Storage string `yaml:"storage,omitempty" validate:"omitempty,k8s_memory"`
+	GPU     int    `yaml:"gpu,omitempty" validate:"omitempty,min=0,max=8"` // Number of GPUs requested
+}
+
+// VolumeMount represents a volume mount configuration
+type VolumeMount struct {
+	Name          string `yaml:"name" validate:"required,min=1,max=63,alphanum"`
+	LocalPath     string `yaml:"localPath" validate:"required,min=1,filepath"`
+	ContainerPath string `yaml:"containerPath" validate:"required,min=1,filepath"`
+}
+
+// RefreshConfig represents auto-refresh settings
+type RefreshConfig struct {
+	Enabled      bool   `yaml:"enabled,omitempty"`
+	Schedule     string `yaml:"schedule,omitempty,cron"` // Cron format
+	Type         string `yaml:"type,omitempty"`
+	PreserveHome bool   `yaml:"preserveHome,omitempty"`
 }
 
 // NewBaseConfigWithDefaults creates a BaseConfig instance pre-populated with system defaults
@@ -71,42 +107,6 @@ func NewBaseConfigWithDefaults() BaseConfig {
 		},
 		Volumes: []VolumeMount{}, // Empty slice - no default volumes
 	}
-}
-
-// GitConfig represents Git-related configuration
-type GitConfig struct {
-	Name  string `yaml:"name,omitempty"`
-	Email string `yaml:"email,omitempty"`
-}
-
-// PackageConfig represents package installation configuration
-type PackageConfig struct {
-	Python []string `yaml:"python,omitempty"`
-	APT    []string `yaml:"apt,omitempty"`
-	// Consider adding other package managers such as NPM, Yarn, etc.
-}
-
-// ResourceConfig represents resource allocation
-type ResourceConfig struct {
-	CPU     any    `yaml:"cpu,omitempty"` // Can be string or int
-	Memory  string `yaml:"memory,omitempty"`
-	Storage string `yaml:"storage,omitempty"`
-	GPU     int    `yaml:"gpu,omitempty"` // Number of GPUs requested
-}
-
-// VolumeMount represents a volume mount configuration
-type VolumeMount struct {
-	Name          string `yaml:"name"`
-	LocalPath     string `yaml:"localPath"`
-	ContainerPath string `yaml:"containerPath"`
-}
-
-// RefreshConfig represents auto-refresh settings
-type RefreshConfig struct {
-	Enabled      bool   `yaml:"enabled,omitempty"`
-	Schedule     string `yaml:"schedule,omitempty"` // Cron format
-	Type         string `yaml:"type,omitempty"`
-	PreserveHome bool   `yaml:"preserveHome,omitempty"`
 }
 
 // Methods for BaseConfig that are promoted to DevEnvConfig
@@ -217,4 +217,8 @@ func (c *DevEnvConfig) GetSSHKeysString() string {
 		return ""
 	}
 	return fmt.Sprintf("%s\n", strings.Join(keys, "\n"))
+}
+
+func (c *DevEnvConfig) Validate() error {
+	return ValidateDevEnvConfig(c)
 }
