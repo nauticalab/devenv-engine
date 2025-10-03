@@ -11,9 +11,11 @@ vars:
 tasks:
   build:
     desc: Build devenv binary with version info
+    env:
+      VERSION: 
+        sh: ./scripts/get-version.sh
     cmds:
       - |
-        VERSION=$(./scripts/get-version.sh)
         COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
         BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
         GO_VERSION=$(go version | awk '{print $3}')
@@ -28,9 +30,11 @@ tasks:
 
   build:release:
     desc: Build optimized release binary
+    env:
+      VERSION: 
+        sh: ./scripts/get-version.sh
     cmds:
       - |
-        VERSION=$(./scripts/get-version.sh)
         COMMIT=$(git rev-parse --short HEAD)
         BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
         GO_VERSION=$(go version | awk '{print $3}')
@@ -49,9 +53,11 @@ tasks:
       - task: build:windows
 
   build:linux:
+    env:
+      VERSION: 
+        sh: ./scripts/get-version.sh
     cmds:
       - |
-        VERSION=$(./scripts/get-version.sh)
         COMMIT=$(git rev-parse --short HEAD)
         BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
         GO_VERSION=$(go version | awk '{print $3}')
@@ -62,9 +68,11 @@ tasks:
         echo "✅ {{.BUILD_DIR}}/{{.BINARY_NAME}}-linux-amd64"
 
   build:darwin-amd64:
+    env:
+      VERSION: 
+        sh: ./scripts/get-version.sh
     cmds:
       - |
-        VERSION=$(./scripts/get-version.sh)
         COMMIT=$(git rev-parse --short HEAD)
         BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
         GO_VERSION=$(go version | awk '{print $3}')
@@ -75,9 +83,11 @@ tasks:
         echo "✅ {{.BUILD_DIR}}/{{.BINARY_NAME}}-darwin-amd64"
 
   build:darwin-arm64:
+    env:
+      VERSION: 
+        sh: ./scripts/get-version.sh
     cmds:
       - |
-        VERSION=$(./scripts/get-version.sh)
         COMMIT=$(git rev-parse --short HEAD)
         BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
         GO_VERSION=$(go version | awk '{print $3}')
@@ -88,9 +98,11 @@ tasks:
         echo "✅ {{.BUILD_DIR}}/{{.BINARY_NAME}}-darwin-arm64"
 
   build:windows:
+    env:
+      VERSION: 
+        sh: ./scripts/get-version.sh
     cmds:
       - |
-        VERSION=$(./scripts/get-version.sh)
         COMMIT=$(git rev-parse --short HEAD)
         BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
         GO_VERSION=$(go version | awk '{print $3}')
