@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: devenv-ingress-{{.Name}}
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt"
+    
+    {{- if and .EnableAuth }}
+    nginx.ingress.kubernetes.io/auth-url: "{{.AuthURL}}"
+    nginx.ingress.kubernetes.io/auth-signin: "{{.AuthSignIn}}?rd=$scheme://$host$escaped_request_uri"
+    nginx.ingress.kubernetes.io/auth-response-headers: "Authorization,X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token"
+    {{- end}}
+    
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{.Name}}.{{.HostName}}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: devenv-http-{{.Name}}
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - "*.{{.HostName}}"
+      secretName: http-{{.Name}}-tls

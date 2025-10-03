@@ -7,5 +7,6 @@ metadata:
 data:
   USER: "testuser"
   UID: "2000"
+  IS_ADMIN: "true"
   GIT_NAME: "Test User"
   GIT_EMAIL: "testuser@example.com"

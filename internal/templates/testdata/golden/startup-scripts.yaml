@@ -7,7 +7,7 @@ metadata:
 data:
   # Templated script - processed with config values
   startup.sh: |
-#!/bin/bash
+    #!/bin/bash
     # Container startup script for developer environment: testuser
     set -e
     
@@ -157,7 +157,7 @@ data:
   
   # Static utility scripts - included as-is
   run_with_git.sh: |
-#!/bin/bash
+    #!/bin/bash
     #
     # run_with_git - Run commands as another user with temporary Git credentials
     #
@@ -217,7 +217,7 @@ data:
   
   # Static requirements file
   requirements.txt: |
-# Common Python packages for scientific computing
+    # Common Python packages for scientific computing
     # This file contains baseline packages that are installed in all environments
     
     # Core scientific stack
@@ -246,7 +246,7 @@ data:
 
   # User setup script
   setup.sh: |
-#!/bin/bash
+    #!/bin/bash
     # User environment setup script for: testuser
     # This script runs as the developer user to configure their personal environment
     set -e

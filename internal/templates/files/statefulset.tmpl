@@ -42,15 +42,38 @@ spec:
       containers:
       - name: {{.Name}}
         image: {{.Image}}
+        workingDir: "/src"
+        securityContext:
+          # Root required to configure new user and setup sshd
+          runAsUser: 0
+        command: ["/bin/bash", "/scripts/startup.sh"]
         ports:
         - containerPort: 22
           name: ssh
-          protocol: TCP
         {{- if ne .HTTPPort 0}}
         - containerPort: {{.HTTPPort}}
           name: http
-          protocol: TCP
         {{- end}}
+
+        readinessProbe:
+          tcpSocket:
+            port: 22
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 6
+
+        env:
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-token
+              key: token
+              optional: true
+        envFrom:
+        - configMapRef:
+            name: env-vars-{{.Name}}
+
         resources:
           limits:
           {{- if gt (.GPU) 0}}
@@ -72,20 +95,6 @@ spec:
           {{- if ne (.MemoryRequest) "unlimited"}}
             memory: "{{.MemoryRequest}}"
           {{- end}}
-        env:
-        - name: USERNAME
-          value: {{.Name}}
-        - name: USER_ID
-          value: "{{if .UID}}{{.UID}}{{else}}1000{{end}}"
-        - name: IS_ADMIN
-          value: "{{.IsAdmin}}"
-        envFrom:
-        - configMapRef:
-            name: env-vars-{{.Name}}
-
-        securityContext:
-          runAsUser: {{if .UID}}{{.UID}}{{else}}1000{{end}}
-          runAsGroup: {{if .UID}}{{.UID}}{{else}}1000{{end}}
             
         volumeMounts:
         - name: dev-storage
@@ -94,9 +103,6 @@ spec:
           mountPath: /home/linuxbrew
         - name: startup-scripts
           mountPath: /scripts
-          readOnly: true
-        - name: ssh-keys
-          mountPath: /home/{{.Name}}/.ssh
           readOnly: true
         {{- range .Volumes}}
         - name: {{.Name}}
@@ -116,13 +122,9 @@ spec:
         configMap:
           name: startup-scripts-{{.Name}}
           defaultMode: 0755
-      - name: ssh-keys
-        secret:
-          secretName: ssh-keys-{{.Name}}
-          defaultMode: 0600
       {{- range .Volumes}}
       - name: {{.Name}}
         hostPath:
           path: {{.LocalPath}}
-          type: Directory
+          type: DirectoryOrCreate
       {{- end}}
