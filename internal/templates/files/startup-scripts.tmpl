@@ -7,16 +7,16 @@ metadata:
 data:
   # Templated script - processed with config values
   startup.sh: |
-{{getTemplatedScript "startup.sh" . | indent 4}}
+    {{getTemplatedScript "startup.sh" . | indent 4}}
   
   # Static utility scripts - included as-is
   run_with_git.sh: |
-{{getStaticScript "run_with_git.sh" | indent 4}}
+    {{getStaticScript "run_with_git.sh" | indent 4}}
   
   # Static requirements file
   requirements.txt: |
-{{getStaticScript "requirements.txt" | indent 4}}
+    {{getStaticScript "requirements.txt" | indent 4}}
 
   # User setup script
   setup.sh: |
-{{getTemplatedScript "user-setup.sh" . | indent 4}}
+    {{getTemplatedScript "user-setup.sh" . | indent 4}}
