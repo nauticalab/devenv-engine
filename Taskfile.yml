@@ -3,27 +3,116 @@ version: "3"
 vars:
   BINARY_NAME: devenv
   SOURCE_DIR: cmd/devenv
-  BUILD_DIR: bin
-  MANIFEST_BUILD_DIR: build
+  BUILD_DIR: ./bin
+  MANIFEST_BUILD_DIR: ./build
+
+
 
 tasks:
   build:
-    desc: Build the binary
+    desc: Build devenv binary with version info
     cmds:
-      - mkdir -p {{.BUILD_DIR}}
-      - go build -o {{.BUILD_DIR}}/{{.BINARY_NAME}} ./{{.SOURCE_DIR}}
+      - |
+        VERSION=$(./scripts/get-version.sh)
+        COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+        BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+        GO_VERSION=$(go version | awk '{print $3}')
+        
+        LDFLAGS="-X main.version=${VERSION} -X main.gitCommit=${COMMIT} -X main.buildTime=${BUILD_TIME} -X main.goVersion=${GO_VERSION}"
+        
+        echo "Building {{.BUILD_DIR}}/{{.BINARY_NAME}}..."
+        echo "  Version: ${VERSION}"
 
+        go build -ldflags="${LDFLAGS}" -o {{.BUILD_DIR}}/{{.BINARY_NAME}} ./{{.SOURCE_DIR}}
+        echo "✅ Build complete!"
+
+  build:release:
+    desc: Build optimized release binary
+    cmds:
+      - |
+        VERSION=$(./scripts/get-version.sh)
+        COMMIT=$(git rev-parse --short HEAD)
+        BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+        GO_VERSION=$(go version | awk '{print $3}')
+        LDFLAGS="-X main.version=${VERSION} -X main.gitCommit=${COMMIT} -X main.buildTime=${BUILD_TIME} -X main.goVersion=${GO_VERSION} -w -s"
+        
+        mkdir -p {{.BUILD_DIR}}
+        go build -ldflags="${LDFLAGS}" -o {{.BUILD_DIR}}/{{.BINARY_NAME}} ./{{.SOURCE_DIR}}
+        echo "✅ Release binary: {{.BUILD_DIR}}/{{.BINARY_NAME}}"
+
+  build:all:
+    desc: Build binaries for all platforms
+    cmds:
+      - task: build:linux
+      - task: build:darwin-amd64  
+      - task: build:darwin-arm64
+      - task: build:windows
+
+  build:linux:
+    cmds:
+      - |
+        VERSION=$(./scripts/get-version.sh)
+        COMMIT=$(git rev-parse --short HEAD)
+        BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+        GO_VERSION=$(go version | awk '{print $3}')
+        LDFLAGS="-X main.version=${VERSION} -X main.gitCommit=${COMMIT} -X main.buildTime=${BUILD_TIME} -X main.goVersion=${GO_VERSION} -w -s"
+        
+        mkdir -p {{.BUILD_DIR}}
+        GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o {{.BUILD_DIR}}/{{.BINARY_NAME}}-linux-amd64 ./{{.SOURCE_DIR}}
+        echo "✅ {{.BUILD_DIR}}/{{.BINARY_NAME}}-linux-amd64"
+
+  build:darwin-amd64:
+    cmds:
+      - |
+        VERSION=$(./scripts/get-version.sh)
+        COMMIT=$(git rev-parse --short HEAD)
+        BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+        GO_VERSION=$(go version | awk '{print $3}')
+        LDFLAGS="-X main.version=${VERSION} -X main.gitCommit=${COMMIT} -X main.buildTime=${BUILD_TIME} -X main.goVersion=${GO_VERSION} -w -s"
+        
+        mkdir -p {{.BUILD_DIR}}
+        GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o {{.BUILD_DIR}}/{{.BINARY_NAME}}-darwin-amd64 ./{{.SOURCE_DIR}}
+        echo "✅ {{.BUILD_DIR}}/{{.BINARY_NAME}}-darwin-amd64"
+
+  build:darwin-arm64:
+    cmds:
+      - |
+        VERSION=$(./scripts/get-version.sh)
+        COMMIT=$(git rev-parse --short HEAD)
+        BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+        GO_VERSION=$(go version | awk '{print $3}')
+        LDFLAGS="-X main.version=${VERSION} -X main.gitCommit=${COMMIT} -X main.buildTime=${BUILD_TIME} -X main.goVersion=${GO_VERSION} -w -s"
+        
+        mkdir -p {{.BUILD_DIR}}
+        GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o {{.BUILD_DIR}}/{{.BINARY_NAME}}-darwin-arm64 ./{{.SOURCE_DIR}}
+        echo "✅ {{.BUILD_DIR}}/{{.BINARY_NAME}}-darwin-arm64"
+
+  build:windows:
+    cmds:
+      - |
+        VERSION=$(./scripts/get-version.sh)
+        COMMIT=$(git rev-parse --short HEAD)
+        BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+        GO_VERSION=$(go version | awk '{print $3}')
+        LDFLAGS="-X main.version=${VERSION} -X main.gitCommit=${COMMIT} -X main.buildTime=${BUILD_TIME} -X main.goVersion=${GO_VERSION} -w -s"
+        
+        mkdir -p {{.BUILD_DIR}}
+        GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o {{.BUILD_DIR}}/{{.BINARY_NAME}}-windows-amd64.exe ./{{.SOURCE_DIR}}
+        echo "✅ {{.BUILD_DIR}}/{{.BINARY_NAME}}-windows-amd64.exe"
+
+  
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v ./... {{.CLI_ARGS}}
+  
   clean:
     desc: Clean build artifacts
     cmds:
       - go clean
       - rm -rf {{.BUILD_DIR}}
       - rm -rf {{.MANIFEST_BUILD_DIR}}
-
-  test:
-    desc: Run tests
-    cmds:
-      - go test ./... {{.CLI_ARGS}}
+      - echo "✅ Cleaned"
 
   update-golden:
     desc: Update golden files for tests
@@ -34,3 +123,7 @@ tasks:
     desc: Launch pkgsite documentation server
     cmds:
       - pkgsite -open
+
+
+  
+

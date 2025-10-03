@@ -21,6 +21,7 @@ var (
 	version   = "dev"
 	buildTime = "unknown"
 	gitCommit = "unknown"
+	goVersion = "unknown"
 )
 
 func main() {

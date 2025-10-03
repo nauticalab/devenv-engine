@@ -16,6 +16,7 @@ var versionCmd = &cobra.Command{
 		if verbose {
 			fmt.Printf("  Build time: %s\n", buildTime)
 			fmt.Printf("  Git commit: %s\n", gitCommit)
+			fmt.Printf("  Go version: %s\n", goVersion)
 		}
 	},
 }
