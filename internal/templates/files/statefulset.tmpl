@@ -42,8 +42,9 @@ spec:
       containers:
       - name: {{.Name}}
         image: {{.Image}}
-        workingDir: "/src" # TODO: evaluate the necessity of this
+        workingDir: "/src"
         securityContext:
+          # Root required to configure new user and setup sshd
           runAsUser: 0
         command: ["/bin/bash", "/scripts/startup.sh"]
         ports:
@@ -62,7 +63,6 @@ spec:
           successThreshold: 1
           failureThreshold: 6
 
-        
         env:
         - name: GITHUB_TOKEN
           valueFrom:
@@ -73,8 +73,6 @@ spec:
         envFrom:
         - configMapRef:
             name: env-vars-{{.Name}}
-
-
 
         resources:
           limits:
