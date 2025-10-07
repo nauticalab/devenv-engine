@@ -13,7 +13,7 @@ import (
 )
 
 var templatesToRender = []string{"statefulset", "service", "env-vars",
-	"secret", "startup-scripts", "ingress"}
+	"startup-scripts", "ingress"}
 
 // Embed all templates and scripts at compile time
 //

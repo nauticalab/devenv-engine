@@ -57,7 +57,7 @@ func TestRenderTemplate(t *testing.T) {
 		},
 	}
 
-	templates := []string{"statefulset", "service", "secret", "env-vars", "startup-scripts"}
+	templates := []string{"statefulset", "service", "env-vars", "startup-scripts"}
 
 	for _, templateName := range templates {
 		t.Run(templateName, func(t *testing.T) {
@@ -121,7 +121,7 @@ func TestRenderAll(t *testing.T) {
 	require.NoError(t, err, "RenderAll should not return error")
 
 	// Verify all expected files were created
-	expectedFiles := []string{"statefulset.yaml", "service.yaml", "env-vars.yaml", "secret.yaml", "startup-scripts.yaml"}
+	expectedFiles := []string{"statefulset.yaml", "service.yaml", "env-vars.yaml", "startup-scripts.yaml"}
 
 	for _, filename := range expectedFiles {
 		filePath := filepath.Join(tempDir, filename)
