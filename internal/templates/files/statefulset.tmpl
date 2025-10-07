@@ -77,7 +77,7 @@ spec:
         resources:
           limits:
           {{- if gt (.GPU) 0}}
-            nvidia.com/gpu: {{.GPU}}
+            nvidia.com/gpu: "{{.GPU}}"
           {{- end}}
           {{- if ne (.CPU) "unlimited"}}
             cpu: "{{.CPU}}"
