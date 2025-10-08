@@ -65,7 +65,7 @@ func TestRenderTemplate(t *testing.T) {
 			tempDir := t.TempDir()
 
 			// Create renderer
-			renderer := NewRenderer(tempDir)
+			renderer := NewDevRenderer(tempDir)
 
 			// Render template
 			err := renderer.RenderTemplate(templateName, testConfig)
@@ -114,7 +114,7 @@ func TestRenderAll(t *testing.T) {
 	}
 
 	tempDir := t.TempDir()
-	renderer := NewRenderer(tempDir)
+	renderer := NewDevRenderer(tempDir)
 
 	// Test RenderAll
 	err := renderer.RenderAll(testConfig)
@@ -146,7 +146,7 @@ func TestRenderTemplate_ErrorCases(t *testing.T) {
 
 	t.Run("invalid template name", func(t *testing.T) {
 		tempDir := t.TempDir()
-		renderer := NewRenderer(tempDir)
+		renderer := NewDevRenderer(tempDir)
 
 		err := renderer.RenderTemplate("nonexistent", testConfig)
 		assert.Error(t, err, "Should return error for invalid template")
@@ -154,7 +154,7 @@ func TestRenderTemplate_ErrorCases(t *testing.T) {
 
 	t.Run("invalid output directory", func(t *testing.T) {
 		// Use a path that can't be created (assuming /root is not writable in test)
-		renderer := NewRenderer("/root/impossible/path")
+		renderer := NewDevRenderer("/root/impossible/path")
 
 		err := renderer.RenderTemplate("configmap", testConfig)
 		assert.Error(t, err, "Should return error for invalid output directory")
