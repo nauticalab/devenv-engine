@@ -116,7 +116,7 @@ tasks:
   test:
     desc: Run tests
     cmds:
-      - go test -v ./... {{.CLI_ARGS}}
+      - go test ./... {{.CLI_ARGS}}
   
   clean:
     desc: Clean build artifacts
@@ -129,7 +129,7 @@ tasks:
   update-golden:
     desc: Update golden files for tests
     cmds:
-      - go test ./... -v -- -update-golden {{.CLI_ARGS}} 
+      - go test ./... -- -update-golden {{.CLI_ARGS}} 
 
   doc:
     desc: Launch pkgsite documentation server
