@@ -209,8 +209,12 @@ git:
 		err = os.WriteFile(configPath, []byte(userConfigYAML), 0644)
 		require.NoError(t, err)
 
+		// Load global config
+		globalConfig, err := LoadGlobalConfig(tempDir)
+		require.NoError(t, err)
+
 		// Load with global defaults
-		config, err := LoadDeveloperConfigWithGlobalDefaults(tempDir, "alice")
+		config, err := LoadDeveloperConfigWithBaseConfig(tempDir, "alice", globalConfig)
 		require.NoError(t, err)
 
 		// Test user-specific fields
@@ -261,8 +265,12 @@ installHomebrew: false
 		err = os.WriteFile(configPath, []byte(userConfigYAML), 0644)
 		require.NoError(t, err)
 
+		// Load global config (should be all defaults)
+		globalConfig, err := LoadGlobalConfig(tempDir)
+		require.NoError(t, err)
+
 		// Load with global defaults
-		config, err := LoadDeveloperConfigWithGlobalDefaults(tempDir, "alice")
+		config, err := LoadDeveloperConfigWithBaseConfig(tempDir, "alice", globalConfig)
 		require.NoError(t, err)
 
 		// Should get system defaults + user overrides

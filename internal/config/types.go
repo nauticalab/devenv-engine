@@ -32,6 +32,10 @@ type BaseConfig struct {
 	EnableAuth         bool   `yaml:"enableAuth,omitempty"`
 	AuthURL            string `yaml:"authURL,omitempty" validate:"omitempty,min=1,url"`
 	AuthSignIn         string `yaml:"authSignIn,omitempty" validate:"omitempty,min=1,url"`
+
+	// DevENV wide settings
+	Namespace       string `yaml:"namespace,omitempty" validate:"omitempty,min=1,max=63,hostname"`
+	EnvironmentName string `yaml:"environmentName,omitempty" validate:"omitempty,min=1,max=63,hostname"`
 }
 
 // DevEnvConfig represents the complete configuration for a developer environment.
@@ -109,7 +113,9 @@ func NewBaseConfigWithDefaults() BaseConfig {
 			Python: []string{}, // Empty slice - no default packages
 			APT:    []string{}, // Empty slice - no default packages
 		},
-		Volumes: []VolumeMount{}, // Empty slice - no default volumes
+		Volumes:         []VolumeMount{}, // Empty slice - no default volumes
+		Namespace:       "devenv",        // Default namespace
+		EnvironmentName: "development",   // Default environment name
 	}
 }
 

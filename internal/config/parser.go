@@ -79,16 +79,11 @@ func LoadDeveloperConfig(configDir, developerName string) (*DevEnvConfig, error)
 // LoadDeveloperConfigWithGlobalDefaults loads a developer config and merges it with global defaults.
 // This is the recommended loading function that provides the complete configuration hierarchy:
 // System defaults → Global config → User config
-func LoadDeveloperConfigWithGlobalDefaults(configDir, developerName string) (*DevEnvConfig, error) {
-	// Step 1: Load global configuration (pre-populated with system defaults)
-	globalConfig, err := LoadGlobalConfig(configDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load global config: %w", err)
-	}
+func LoadDeveloperConfigWithBaseConfig(configDir, developerName string, baseConfig *BaseConfig) (*DevEnvConfig, error) {
 
 	// Step 2: Create user config pre-populated with global config values
 	userConfig := &DevEnvConfig{
-		BaseConfig: *globalConfig, // Copy all global values (which include system defaults)
+		BaseConfig: *baseConfig, // Copy all global values (which include system defaults)
 	}
 
 	// Step 3: Load user YAML
@@ -113,7 +108,7 @@ func LoadDeveloperConfigWithGlobalDefaults(configDir, developerName string) (*De
 
 	// Step 5: Merge additive list fields (packages, volumes, SSH keys)
 	// Note that this step is neceessary because YAML unmarshaling replaces slices
-	userConfig.mergeListFields(globalConfig)
+	userConfig.mergeListFields(baseConfig)
 
 	// Step 6: Set developer directory and validate
 	userConfig.DeveloperDir = developerDir

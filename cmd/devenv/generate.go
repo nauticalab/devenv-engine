@@ -78,7 +78,26 @@ func init() {
 }
 
 func generateAllDevelopersWithProgress() {
-	// Step 1: Discover all developers
+	// Step 1: Load global config once
+	globalConfig, err := config.LoadGlobalConfig(configDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading global config in %s: %v\n", configDir, err)
+		os.Exit(1)
+	}
+
+	if verbose {
+		fmt.Printf("Generating system manifests in %s\n", outputDir)
+	}
+
+	// Step 2: Generate system manifests once
+	if !dryRun {
+		if err := generateSystemManifests(globalConfig, outputDir); err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating system manifests: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	// Step 3: Discover all developers
 	developers, err := findAllDevelopers(configDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error discovering developers: %v\n", err)
@@ -86,29 +105,29 @@ func generateAllDevelopersWithProgress() {
 	}
 
 	if len(developers) == 0 {
-		fmt.Printf("No deveolopers found in %s\n", configDir)
+		fmt.Printf("No developers found in %s\n", configDir)
 		return
 	}
 
 	fmt.Printf("Found %d developers to process.\n", len(developers))
 
-	// Step 2: Set up channels for worker communication
+	// Step 4: Set up channels for worker communication
 	const numWorkers = 4
 	jobs := make(chan DeveloperJob, len(developers))
 	results := make(chan ProcessingResult, len(developers))
 
-	// Step 3: Start worker goroutines
+	// Step 5: Start worker goroutines
 	for i := 0; i < numWorkers; i++ {
-		go developerWorker(jobs, results)
+		go developerWorker(jobs, results, globalConfig)
 	}
 
-	// Step 4: Send all jobs to workers
+	// Step 6: Send all jobs to workers
 	for _, dev := range developers {
 		jobs <- DeveloperJob{Name: dev}
 	}
 	close(jobs)
 
-	// Step 5: Collect results
+	// Step 7: Collect results
 	var successCount, failureCount int
 	var failures []ProcessingResult
 
@@ -126,7 +145,7 @@ func generateAllDevelopersWithProgress() {
 		}
 	}
 
-	// Step 6: Print final summary
+	// Step 8: Print final summary
 	fmt.Printf("\n🎉 Batch processing complete!\n")
 	fmt.Printf("✅ Successful: %d\n", successCount)
 	if failureCount > 0 {
@@ -142,10 +161,10 @@ func generateAllDevelopersWithProgress() {
 	}
 }
 
-func developerWorker(jobs <-chan DeveloperJob, results chan<- ProcessingResult) {
+func developerWorker(jobs <-chan DeveloperJob, results chan<- ProcessingResult, globalConfig *config.BaseConfig) {
 	for job := range jobs {
 		startTime := time.Now()
-		err := processSingleDeveloperForBatchWithError(job.Name)
+		err := processSingleDeveloperForBatchWithError(job.Name, globalConfig)
 
 		results <- ProcessingResult{
 			Developer: job.Name,
@@ -157,12 +176,12 @@ func developerWorker(jobs <-chan DeveloperJob, results chan<- ProcessingResult) 
 }
 
 // processSingleDeveloperForBatchWithError processes a single developer for batch mode
-func processSingleDeveloperForBatchWithError(developerName string) error {
+func processSingleDeveloperForBatchWithError(developerName string, globalConfig *config.BaseConfig) error {
 	if verbose {
 		fmt.Printf("Processing developer: %s\n", developerName)
 	}
 
-	cfg, err := config.LoadDeveloperConfigWithGlobalDefaults(configDir, developerName)
+	cfg, err := config.LoadDeveloperConfigWithBaseConfig(configDir, developerName, globalConfig)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
@@ -171,7 +190,7 @@ func processSingleDeveloperForBatchWithError(developerName string) error {
 	userOutputDir := filepath.Join(outputDir, developerName)
 
 	if !dryRun {
-		if err := generateManifests(cfg, userOutputDir); err != nil {
+		if err := generateDeveloperManifests(cfg, userOutputDir); err != nil {
 			return fmt.Errorf("failed to generate manifests: %w", err)
 		}
 	}
@@ -212,7 +231,18 @@ func generateSingleDeveloper(developerName string) {
 
 	userOutputDir := filepath.Join(outputDir, developerName)
 
-	cfg, err := config.LoadDeveloperConfigWithGlobalDefaults(configDir, developerName)
+	globalConfig, err := config.LoadGlobalConfig(configDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading global config in %s: %v\n", configDir, err)
+		os.Exit(1)
+	}
+
+	if err := generateSystemManifests(globalConfig, outputDir); err != nil {
+		fmt.Fprintf(os.Stderr, "Error generating system manifests: %v\n", err)
+		os.Exit(1)
+	}
+
+	cfg, err := config.LoadDeveloperConfigWithBaseConfig(configDir, developerName, globalConfig)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading config for developer %s: %v\n", developerName, err)
 		os.Exit(1)
@@ -225,7 +255,7 @@ func generateSingleDeveloper(developerName string) {
 	}
 
 	if !dryRun {
-		if err := generateManifests(cfg, userOutputDir); err != nil {
+		if err := generateDeveloperManifests(cfg, userOutputDir); err != nil {
 			fmt.Fprintf(os.Stderr, "Error generating manifests: %v\n", err)
 			os.Exit(1)
 		}
@@ -234,10 +264,24 @@ func generateSingleDeveloper(developerName string) {
 	}
 }
 
-// generateManifests creates Kubernetes manifests for a developer
-func generateManifests(cfg *config.DevEnvConfig, outputDir string) error {
+func generateSystemManifests(cfg *config.BaseConfig, outputDir string) error {
 	// Create template renderer
-	renderer := templates.NewRenderer(outputDir)
+	renderer := templates.NewSystemRenderer(outputDir)
+
+	// Render all main templates
+	if err := renderer.RenderAll(cfg); err != nil {
+		return fmt.Errorf("failed to render templates: %w", err)
+	}
+
+	fmt.Printf("🎉 Successfully generated system manifests\n")
+
+	return nil
+}
+
+// generateDeveloperManifests creates Kubernetes manifests for a developer
+func generateDeveloperManifests(cfg *config.DevEnvConfig, outputDir string) error {
+	// Create template renderer
+	renderer := templates.NewDevRenderer(outputDir)
 
 	// Render all main templates
 	if err := renderer.RenderAll(cfg); err != nil {

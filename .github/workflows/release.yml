@@ -1,85 +1,85 @@
 name: Release
 
 on:
-    push:
-        tags:
-            - "v*" # Trigger on version tags like v0.1.0, v1.2.3
+  push:
+    tags:
+      - "v*" # Trigger on version tags like v0.1.0, v1.2.3
 
 permissions:
-    contents: write # Required for creating releases
+  contents: write # Required for creating releases
 
 jobs:
-    test:
-        name: Run Tests
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v5
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-            - name: Set up Go
-              uses: actions/setup-go@v5
-              with:
-                  go-version: "1.24"
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
 
-            - name: Run tests
-              run: go test -v ./...
+      - name: Run tests
+        run: go test -v ./...
 
-    release:
-        name: Build and Release
-        needs: test # Only run if tests pass
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v5
+  release:
+    name: Build and Release
+    needs: test # Only run if tests pass
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-            - name: Set up Go
-              uses: actions/setup-go@v5
-              with:
-                  go-version: "1.24"
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
 
-            - name: Build binaries for all platforms
-              run: |
-                  # Get version from tag (GitHub sets GITHUB_REF to refs/tags/v0.1.0)
-                  VERSION=${GITHUB_REF#refs/tags/}
-                  COMMIT=$(git rev-parse --short HEAD)
-                  BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-                  GO_VERSION=$(go version | awk '{print $3}')
+      - name: Build binaries for all platforms
+        run: |
+          # Get version from tag (GitHub sets GITHUB_REF to refs/tags/v0.1.0)
+          VERSION=${GITHUB_REF#refs/tags/}
+          COMMIT=$(git rev-parse --short HEAD)
+          BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          GO_VERSION=$(go version | awk '{print $3}')
 
-                  echo "Building version: ${VERSION}"
+          echo "Building version: ${VERSION}"
 
-                  # Build flags
-                  LDFLAGS="-X main.version=${VERSION} -X main.gitCommit=${COMMIT} -X main.buildTime=${BUILD_TIME} -X main.goVersion=${GO_VERSION} -w -s"
+          # Build flags
+          LDFLAGS="-X main.version=${VERSION} -X main.gitCommit=${COMMIT} -X main.buildTime=${BUILD_TIME} -X main.goVersion=${GO_VERSION} -w -s"
 
-                  # Create output directory
-                  mkdir -p dist
+          # Create output directory
+          mkdir -p dist
 
-                  # Linux amd64
-                  echo "Building Linux amd64..."
-                  GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/devenv-linux-amd64 ./cmd/devenv
+          # Linux amd64
+          echo "Building Linux amd64..."
+          GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/devenv-linux-amd64 ./cmd/devenv
 
-                  # macOS amd64 (Intel)
-                  echo "Building macOS amd64..."
-                  GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/devenv-darwin-amd64 ./cmd/devenv
+          # macOS amd64 (Intel)
+          echo "Building macOS amd64..."
+          GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/devenv-darwin-amd64 ./cmd/devenv
 
-                  # macOS arm64 (Apple Silicon)
-                  echo "Building macOS arm64..."
-                  GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/devenv-darwin-arm64 ./cmd/devenv
+          # macOS arm64 (Apple Silicon)
+          echo "Building macOS arm64..."
+          GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/devenv-darwin-arm64 ./cmd/devenv
 
-                  # Windows amd64
-                  echo "Building Windows amd64..."
-                  GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/devenv-windows-amd64.exe ./cmd/devenv
+          # Windows amd64
+          echo "Building Windows amd64..."
+          GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/devenv-windows-amd64.exe ./cmd/devenv
 
-                  echo "✅ All binaries built successfully"
-                  ls -lh dist/
+          echo "✅ All binaries built successfully"
+          ls -lh dist/
 
-            - name: Create Release
-              uses: softprops/action-gh-release@v2
-              with:
-                  files: |
-                      dist/devenv-linux-amd64
-                      dist/devenv-darwin-amd64
-                      dist/devenv-darwin-arm64
-                      dist/devenv-windows-amd64.exe
-                  generate_release_notes: true
-                  draft: false
-                  prerelease: false
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/devenv-linux-amd64
+            dist/devenv-darwin-amd64
+            dist/devenv-darwin-arm64
+            dist/devenv-windows-amd64.exe
+          generate_release_notes: true
+          draft: false
+          prerelease: false

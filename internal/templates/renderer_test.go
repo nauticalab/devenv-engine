@@ -57,7 +57,7 @@ func TestRenderTemplate(t *testing.T) {
 		},
 	}
 
-	templates := []string{"statefulset", "service", "secret", "env-vars", "startup-scripts"}
+	templates := []string{"statefulset", "service", "env-vars", "startup-scripts"}
 
 	for _, templateName := range templates {
 		t.Run(templateName, func(t *testing.T) {
@@ -65,7 +65,7 @@ func TestRenderTemplate(t *testing.T) {
 			tempDir := t.TempDir()
 
 			// Create renderer
-			renderer := NewRenderer(tempDir)
+			renderer := NewDevRenderer(tempDir)
 
 			// Render template
 			err := renderer.RenderTemplate(templateName, testConfig)
@@ -114,14 +114,14 @@ func TestRenderAll(t *testing.T) {
 	}
 
 	tempDir := t.TempDir()
-	renderer := NewRenderer(tempDir)
+	renderer := NewDevRenderer(tempDir)
 
 	// Test RenderAll
 	err := renderer.RenderAll(testConfig)
 	require.NoError(t, err, "RenderAll should not return error")
 
 	// Verify all expected files were created
-	expectedFiles := []string{"statefulset.yaml", "service.yaml", "env-vars.yaml", "secret.yaml", "startup-scripts.yaml"}
+	expectedFiles := []string{"statefulset.yaml", "service.yaml", "env-vars.yaml", "startup-scripts.yaml"}
 
 	for _, filename := range expectedFiles {
 		filePath := filepath.Join(tempDir, filename)
@@ -146,7 +146,7 @@ func TestRenderTemplate_ErrorCases(t *testing.T) {
 
 	t.Run("invalid template name", func(t *testing.T) {
 		tempDir := t.TempDir()
-		renderer := NewRenderer(tempDir)
+		renderer := NewDevRenderer(tempDir)
 
 		err := renderer.RenderTemplate("nonexistent", testConfig)
 		assert.Error(t, err, "Should return error for invalid template")
@@ -154,7 +154,7 @@ func TestRenderTemplate_ErrorCases(t *testing.T) {
 
 	t.Run("invalid output directory", func(t *testing.T) {
 		// Use a path that can't be created (assuming /root is not writable in test)
-		renderer := NewRenderer("/root/impossible/path")
+		renderer := NewDevRenderer("/root/impossible/path")
 
 		err := renderer.RenderTemplate("configmap", testConfig)
 		assert.Error(t, err, "Should return error for invalid output directory")

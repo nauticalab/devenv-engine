@@ -12,33 +12,41 @@ import (
 	"github.com/nauticalab/devenv-engine/internal/config"
 )
 
-var templatesToRender = []string{"statefulset", "service", "env-vars",
-	"secret", "startup-scripts", "ingress"}
+var devTemplatesToRender = []string{"statefulset", "service", "env-vars",
+	"startup-scripts", "ingress"}
 
-// Embed all templates and scripts at compile time
+var systemTemplatesToRender = []string{"namespace"}
+
+// Embed all devTemplates and scripts at compile time
 //
-//go:embed files/*.tmpl
+//go:embed template_files
 var templates embed.FS
 
-//go:embed scripts/templated/*
-var templatedScripts embed.FS
-
-//go:embed scripts/static/*
-var staticScripts embed.FS
-
 // Renderer handles template operations
-type Renderer struct {
-	outputDir string
+type Renderer[T config.BaseConfig | config.DevEnvConfig] struct {
+	outputDir       string
+	templateRoot    string
+	targetTemplates []string
 }
 
 // NewRenderer creates a new template renderer
-func NewRenderer(outputDir string) *Renderer {
-	return &Renderer{
-		outputDir: outputDir,
+func NewDevRenderer(outputDir string) *Renderer[config.DevEnvConfig] {
+	return NewRendererWithFS[config.DevEnvConfig](outputDir, "template_files/dev", devTemplatesToRender)
+}
+
+func NewSystemRenderer(outputDir string) *Renderer[config.BaseConfig] {
+	return NewRendererWithFS[config.BaseConfig](outputDir, "template_files/system", systemTemplatesToRender)
+}
+
+func NewRendererWithFS[T config.BaseConfig | config.DevEnvConfig](outputDir string, templateRoot string, targetTemplates []string) *Renderer[T] {
+	return &Renderer[T]{
+		outputDir:       outputDir,
+		templateRoot:    templateRoot,
+		targetTemplates: targetTemplates,
 	}
 }
 
-func templateFuncs() template.FuncMap {
+func templateFuncs(templateRoot string) template.FuncMap {
 	return template.FuncMap{
 		"b64enc": func(s string) string {
 			return base64.StdEncoding.EncodeToString([]byte(s))
@@ -49,13 +57,13 @@ func templateFuncs() template.FuncMap {
 		},
 		"getTemplatedScript": func(scriptName string, config *config.DevEnvConfig) (string, error) {
 			// Read the template content
-			content, err := templatedScripts.ReadFile(fmt.Sprintf("scripts/templated/%s", scriptName))
+			content, err := templates.ReadFile(filepath.Join(templateRoot, fmt.Sprintf("scripts/templated/%s", scriptName)))
 			if err != nil {
 				return "", fmt.Errorf("failed to read templated script %s: %w", scriptName, err)
 			}
 
 			// Parse and execute template with config
-			tmpl, err := template.New(scriptName).Funcs(templateFuncs()).Parse(string(content))
+			tmpl, err := template.New(scriptName).Funcs(templateFuncs(templateRoot)).Parse(string(content))
 			if err != nil {
 				return "", fmt.Errorf("failed to parse script template %s: %w", scriptName, err)
 			}
@@ -68,7 +76,7 @@ func templateFuncs() template.FuncMap {
 			return output.String(), nil
 		},
 		"getStaticScript": func(scriptName string) (string, error) {
-			content, err := staticScripts.ReadFile(fmt.Sprintf("scripts/static/%s", scriptName))
+			content, err := templates.ReadFile(filepath.Join(templateRoot, fmt.Sprintf("scripts/static/%s", scriptName)))
 			if err != nil {
 				return "", fmt.Errorf("failed to read static script %s: %w", scriptName, err)
 			}
@@ -77,15 +85,15 @@ func templateFuncs() template.FuncMap {
 	}
 }
 
-func (r *Renderer) RenderTemplate(templateName string, config *config.DevEnvConfig) error {
+func (r *Renderer[T]) RenderTemplate(templateName string, config *T) error {
 	// Get the template content from embedded files
-	templateContent, err := templates.ReadFile(fmt.Sprintf("files/%s.tmpl", templateName))
+	templateContent, err := templates.ReadFile(filepath.Join(r.templateRoot, fmt.Sprintf("manifests/%s.tmpl", templateName)))
 	if err != nil {
 		return err
 	}
 
 	// Parse template
-	tmpl, err := template.New(templateName).Funcs(templateFuncs()).Parse(string(templateContent))
+	tmpl, err := template.New(templateName).Funcs(templateFuncs(r.templateRoot)).Parse(string(templateContent))
 	if err != nil {
 		return fmt.Errorf("failed to parse template %s: %w", templateName, err)
 	}
@@ -115,8 +123,8 @@ func (r *Renderer) RenderTemplate(templateName string, config *config.DevEnvConf
 	return nil
 }
 
-func (r *Renderer) RenderAll(config *config.DevEnvConfig) error {
-	for _, templateName := range templatesToRender {
+func (r *Renderer[T]) RenderAll(config *T) error {
+	for _, templateName := range r.targetTemplates {
 		if err := r.RenderTemplate(templateName, config); err != nil {
 			return fmt.Errorf("failed to render template %s: %w", templateName, err)
 		}
