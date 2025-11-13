@@ -145,6 +145,11 @@ echo "Installing Python packages: {{range $i, $pkg := .Packages.Python}}{{if gt 
 /bin/bash /scripts/run_with_git.sh ${DEV_USERNAME} ${PYTHON_PATH} -m pip install --no-user --no-cache-dir{{range .Packages.Python}} {{.}}{{end}}
 {{- end}}
 
+{{- if gt (len .Packages.Brew) 0}}
+echo "Installing Homebrew packages: {{range $i, $pkg := .Packages.Brew}}{{if gt $i 0}} {{end}}{{$pkg}}{{end}}"
+sudo -u ${DEV_USERNAME} brew install{{range .Packages.Brew}} {{.}}{{end}}
+{{- end}}
+
 echo "Section 6: Package installation complete"
 
 # === USER ENVIRONMENT SETUP ===
@@ -180,6 +185,47 @@ rm -rf /home/${DEV_USERNAME}/.vscode-server/
 chown -R ${DEV_USERNAME}:${DEV_USERNAME} /home/${DEV_USERNAME}/.vscode-server
 
 echo "Section 8: VSCode configuration complete"
+
+# === GIT REPO CLONING ===
+{{- if gt (len .GitRepos) 0}}
+echo "Cloning Git repositories"
+{{- range .GitRepos}}
+echo "Cloning repository: {{.URL}}"
+
+{{- /* Determine target directory */ -}}
+{{- $targetDir := "" -}}
+{{- if .Directory -}}
+  {{- $targetDir = .Directory -}}
+{{- else -}}
+  {{- $targetDir = printf "/home/%s" $.Name -}}
+{{- end }}
+
+# Clone the complete repository
+git clone {{.URL}} {{$targetDir}}
+cd {{$targetDir}}
+
+{{- /* Checkout specific reference */ -}}
+{{- if .Tag}}
+echo "Checking out tag: {{.Tag}}"
+git checkout tags/{{.Tag}}
+{{- else if .CommitHash}}
+echo "Checking out commit: {{.CommitHash}}"
+git checkout {{.CommitHash}}
+{{- else if .Branch}}
+echo "Checking out branch: {{.Branch}}"
+git checkout {{.Branch}}
+{{- else}}
+echo "Staying on default branch"
+{{- end}}
+
+echo "Repository cloned successfully to: {{$targetDir}}"
+echo "Current commit: $(git rev-parse --short HEAD)"
+echo "Current branch/ref: $(git branch --show-current 2>/dev/null || git describe --tags --exact-match 2>/dev/null || echo 'detached HEAD')"
+
+{{- end}}
+{{- else}}
+echo "No Git repositories to clone"
+{{- end}}
 
 # === SSH SERVER LAUNCH ===
 echo "Starting SSH server"

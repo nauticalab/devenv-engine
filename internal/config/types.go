@@ -78,6 +78,7 @@ type PackageConfig struct {
 type GitRepo struct {
 	URL        string `yaml:"url" validate:"required,min=1,url"`
 	Branch     string `yaml:"branch,omitempty" validate:"omitempty,min=1"`
+	Tag        string `yaml:"tag,omitempty" validate:"omitempty,min=1"`
 	CommitHash string `yaml:"commitHash,omitempty" validate:"omitempty,min=1"`
 	Directory  string `yaml:"directory,omitempty" validate:"omitempty,min=1,filepath"`
 }

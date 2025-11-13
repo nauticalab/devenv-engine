@@ -84,10 +84,28 @@ func validateSSHKeys(fl validator.FieldLevel) bool {
 // Ensures that if both Branch and CommitHash are specified, an error is raised.
 func validateGitRepo(sl validator.StructLevel) {
 	repo := sl.Current().Interface().(GitRepo)
-	// Both Branch and CommitHash cannot be specified simultaneously.
-	if repo.Branch != "" && repo.CommitHash != "" {
-		sl.ReportError(repo.Branch, "branch", "Branch", "branch_commit_conflict", "")
-		sl.ReportError(repo.CommitHash, "commitHash", "CommitHash", "branch_commit_conflict", "")
+	// Both Ref and CommitHash cannot be specified simultaneously.
+	targets := []string{}
+	if repo.Branch != "" {
+		targets = append(targets, repo.Branch)
+	}
+	if repo.Tag != "" {
+		targets = append(targets, repo.Tag)
+	}
+	if repo.CommitHash != "" {
+		targets = append(targets, repo.CommitHash)
+	}
+
+	if len(targets) > 1 {
+		if repo.Branch != "" {
+			sl.ReportError(repo.Branch, "branch", "Branch", "too many target specifications", "")
+		}
+		if repo.Tag != "" {
+			sl.ReportError(repo.Tag, "tag", "Tag", "too many target specifications", "")
+		}
+		if repo.CommitHash != "" {
+			sl.ReportError(repo.CommitHash, "commitHash", "CommitHash", "too many target specifications", "")
+		}
 	}
 }
 
@@ -192,13 +210,6 @@ func ValidateDevEnvConfig(config *DevEnvConfig) error {
 
 	if mi, err := config.Resources.getCanonicalMemory(); err != nil || mi < 0 {
 		return err // "memory must be >= 0"
-	}
-
-	// If GitRepos are specified, ensure that hash & branch are not both specified.
-	for i, repo := range config.GitRepos {
-		if repo.CommitHash != "" && repo.Branch != "" {
-			return fmt.Errorf("gitRepos[%d]: commitHash and branch cannot both be specified", i)
-		}
 	}
 
 	if config.Resources.GPU < 0 {
