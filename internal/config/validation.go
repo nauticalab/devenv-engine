@@ -56,6 +56,7 @@ func init() {
 	if err := validate.RegisterValidation("k8s_memory", validateKubernetesMemory); err != nil {
 		panic(fmt.Errorf("register validator k8s_memory: %w", err))
 	}
+	validate.RegisterStructValidation(validateGitRepo, GitRepo{})
 }
 
 // validateSSHKeys implements the "ssh_keys" tag.
@@ -77,6 +78,17 @@ func validateSSHKeys(fl validator.FieldLevel) bool {
 		}
 	}
 	return true
+}
+
+// validateGitRepo implements the "git_repo" tag.
+// Ensures that if both Branch and CommitHash are specified, an error is raised.
+func validateGitRepo(sl validator.StructLevel) {
+	repo := sl.Current().Interface().(GitRepo)
+	// Both Branch and CommitHash cannot be specified simultaneously.
+	if repo.Branch != "" && repo.CommitHash != "" {
+		sl.ReportError(repo.Branch, "branch", "Branch", "branch_commit_conflict", "")
+		sl.ReportError(repo.CommitHash, "commitHash", "CommitHash", "branch_commit_conflict", "")
+	}
 }
 
 // validateKubernetesCPU implements the "k8s_cpu" tag for *raw* CPU fields.
@@ -180,6 +192,13 @@ func ValidateDevEnvConfig(config *DevEnvConfig) error {
 
 	if mi, err := config.Resources.getCanonicalMemory(); err != nil || mi < 0 {
 		return err // "memory must be >= 0"
+	}
+
+	// If GitRepos are specified, ensure that hash & branch are not both specified.
+	for i, repo := range config.GitRepos {
+		if repo.CommitHash != "" && repo.Branch != "" {
+			return fmt.Errorf("gitRepos[%d]: commitHash and branch cannot both be specified", i)
+		}
 	}
 
 	if config.Resources.GPU < 0 {
