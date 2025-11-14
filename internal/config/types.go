@@ -17,6 +17,9 @@ type BaseConfig struct {
 	// Package management
 	Packages PackageConfig `yaml:"packages,omitempty"`
 
+	// Git repos to be cloned
+	GitRepos []GitRepo `yaml:"gitRepos,omitempty" validate:"dive"`
+
 	// Storage configuration
 	Volumes []VolumeMount `yaml:"volumes,omitempty" validate:"dive"`
 
@@ -68,7 +71,16 @@ type GitConfig struct {
 type PackageConfig struct {
 	Python []string `yaml:"python,omitempty" validate:"dive,min=1"`
 	APT    []string `yaml:"apt,omitempty" validate:"dive,min=1"`
+	Brew   []string `yaml:"brew,omitempty" validate:"dive,min=1"`
 	// Consider adding other package managers such as NPM, Yarn, etc.
+}
+
+type GitRepo struct {
+	URL        string `yaml:"url" validate:"required,min=1,url"`
+	Branch     string `yaml:"branch,omitempty" validate:"omitempty,min=1"`
+	Tag        string `yaml:"tag,omitempty" validate:"omitempty,min=1"`
+	CommitHash string `yaml:"commitHash,omitempty" validate:"omitempty,min=1"`
+	Directory  string `yaml:"directory,omitempty" validate:"omitempty,min=1,filepath"`
 }
 
 // ResourceConfig represents resource allocation
@@ -112,7 +124,9 @@ func NewBaseConfigWithDefaults() BaseConfig {
 		Packages: PackageConfig{
 			Python: []string{}, // Empty slice - no default packages
 			APT:    []string{}, // Empty slice - no default packages
+			Brew:   []string{}, // Empty slice - no default packages
 		},
+		GitRepos:        []GitRepo{},     // Empty slice - no default git repositories
 		Volumes:         []VolumeMount{}, // Empty slice - no default volumes
 		Namespace:       "devenv",        // Default namespace
 		EnvironmentName: "development",   // Default environment name

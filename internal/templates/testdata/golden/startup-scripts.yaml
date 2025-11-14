@@ -151,6 +151,9 @@ data:
     
     echo "Section 8: VSCode configuration complete"
     
+    # === GIT REPO CLONING ===
+    echo "No Git repositories to clone"
+    
     # === SSH SERVER LAUNCH ===
     echo "Starting SSH server"
     /usr/sbin/sshd -D

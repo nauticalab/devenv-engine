@@ -56,6 +56,7 @@ func init() {
 	if err := validate.RegisterValidation("k8s_memory", validateKubernetesMemory); err != nil {
 		panic(fmt.Errorf("register validator k8s_memory: %w", err))
 	}
+	validate.RegisterStructValidation(validateGitRepo, GitRepo{})
 }
 
 // validateSSHKeys implements the "ssh_keys" tag.
@@ -77,6 +78,35 @@ func validateSSHKeys(fl validator.FieldLevel) bool {
 		}
 	}
 	return true
+}
+
+// validateGitRepo implements the "git_repo" tag.
+// Ensures that if both Branch and CommitHash are specified, an error is raised.
+func validateGitRepo(sl validator.StructLevel) {
+	repo := sl.Current().Interface().(GitRepo)
+	// Both Ref and CommitHash cannot be specified simultaneously.
+	targets := []string{}
+	if repo.Branch != "" {
+		targets = append(targets, repo.Branch)
+	}
+	if repo.Tag != "" {
+		targets = append(targets, repo.Tag)
+	}
+	if repo.CommitHash != "" {
+		targets = append(targets, repo.CommitHash)
+	}
+
+	if len(targets) > 1 {
+		if repo.Branch != "" {
+			sl.ReportError(repo.Branch, "branch", "Branch", "too many target specifications", "")
+		}
+		if repo.Tag != "" {
+			sl.ReportError(repo.Tag, "tag", "Tag", "too many target specifications", "")
+		}
+		if repo.CommitHash != "" {
+			sl.ReportError(repo.CommitHash, "commitHash", "CommitHash", "too many target specifications", "")
+		}
+	}
 }
 
 // validateKubernetesCPU implements the "k8s_cpu" tag for *raw* CPU fields.
