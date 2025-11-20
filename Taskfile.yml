@@ -2,7 +2,9 @@ version: "3"
 
 vars:
   BINARY_NAME: devenv
+  MANAGER_BINARY_NAME: manager
   SOURCE_DIR: cmd/devenv
+  MANAGER_SOURCE_DIR: cmd/manager
   BUILD_DIR: ./bin
   MANIFEST_BUILD_DIR: ./build
 
@@ -43,6 +45,25 @@ tasks:
         mkdir -p {{.BUILD_DIR}}
         go build -ldflags="${LDFLAGS}" -o {{.BUILD_DIR}}/{{.BINARY_NAME}} ./{{.SOURCE_DIR}}
         echo "✅ Release binary: {{.BUILD_DIR}}/{{.BINARY_NAME}}"
+
+  build:manager:
+    desc: Build manager binary with version info
+    env:
+      VERSION: 
+        sh: ./scripts/get-version.sh
+    cmds:
+      - |
+        COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+        BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+        GO_VERSION=$(go version | awk '{print $3}')
+        
+        LDFLAGS="-X main.version=${VERSION} -X main.gitCommit=${COMMIT} -X main.buildTime=${BUILD_TIME} -X main.goVersion=${GO_VERSION}"
+        
+        echo "Building {{.BUILD_DIR}}/{{.MANAGER_BINARY_NAME}}..."
+        echo "  Version: ${VERSION}"
+
+        go build -ldflags="${LDFLAGS}" -o {{.BUILD_DIR}}/{{.MANAGER_BINARY_NAME}} ./{{.MANAGER_SOURCE_DIR}}
+        echo "✅ Build complete!"
 
   build:all:
     desc: Build binaries for all platforms
