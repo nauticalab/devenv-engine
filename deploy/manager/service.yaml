@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devenv-manager
+  namespace: devenv
+  labels:
+    app.kubernetes.io/name: devenv-manager
+    app.kubernetes.io/component: manager
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: devenv-manager
+    app.kubernetes.io/component: manager

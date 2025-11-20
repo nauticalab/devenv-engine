@@ -1,0 +1,42 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: devenv-manager
+  labels:
+    app.kubernetes.io/name: devenv-manager
+    app.kubernetes.io/component: manager
+rules:
+  # Pod management across all namespaces
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "delete"]
+  
+  # Read pod logs (optional, for future features)
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+  
+  # Token validation
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  
+  # Service account validation (for authorization)
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: devenv-user
+  labels:
+    app.kubernetes.io/name: devenv-manager
+    app.kubernetes.io/component: user-role
+rules:
+  # Users can only view their own pods via manager API
+  # This role is here for documentation - actual enforcement is done by manager
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+    # Note: Actual filtering by developer label is enforced by the manager API
