@@ -39,6 +39,7 @@ type BaseConfig struct {
 	// DevENV wide settings
 	Namespace       string `yaml:"namespace,omitempty" validate:"omitempty,min=1,max=63,hostname"`
 	EnvironmentName string `yaml:"environmentName,omitempty" validate:"omitempty,min=1,max=63,hostname"`
+	ManagerURL      string `yaml:"managerURL,omitempty" validate:"omitempty,url"`
 }
 
 // DevEnvConfig represents the complete configuration for a developer environment.
@@ -126,10 +127,11 @@ func NewBaseConfigWithDefaults() BaseConfig {
 			APT:    []string{}, // Empty slice - no default packages
 			Brew:   []string{}, // Empty slice - no default packages
 		},
-		GitRepos:        []GitRepo{},     // Empty slice - no default git repositories
-		Volumes:         []VolumeMount{}, // Empty slice - no default volumes
-		Namespace:       "devenv",        // Default namespace
-		EnvironmentName: "development",   // Default environment name
+		GitRepos:        []GitRepo{},                  // Empty slice - no default git repositories
+		Volumes:         []VolumeMount{},              // Empty slice - no default volumes
+		Namespace:       "devenv",                     // Default namespace
+		EnvironmentName: "development",                // Default environment name
+		ManagerURL:      "http://devenv-manager:8080", // Default manager URL
 	}
 }
 

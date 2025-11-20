@@ -12,7 +12,7 @@ import (
 	"github.com/nauticalab/devenv-engine/internal/config"
 )
 
-var devTemplatesToRender = []string{"statefulset", "service", "env-vars",
+var devTemplatesToRender = []string{"serviceaccount", "statefulset", "service", "env-vars",
 	"startup-scripts", "ingress"}
 
 var systemTemplatesToRender = []string{"namespace"}

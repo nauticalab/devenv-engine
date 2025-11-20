@@ -16,6 +16,7 @@ spec:
       labels:
         app: devenv-{{.Name}}
         component: devenv
+        developer: {{.Name}}
     spec:
       {{- if gt (len .TargetNodes) 0}}
       affinity:
@@ -37,6 +38,8 @@ spec:
       
       {{- if .IsAdmin}}
       serviceAccountName: k8s-launcher
+      {{- else}}
+      serviceAccountName: devenv-{{.Name}}
       {{- end}}
 
       containers:
@@ -64,6 +67,10 @@ spec:
           failureThreshold: 6
 
         env:
+        - name: DEVENV_MANAGER_URL
+          value: "{{.ManagerURL}}"
+        - name: DEVELOPER
+          value: "{{.Name}}"
         - name: GITHUB_TOKEN
           valueFrom:
             secretKeyRef:
@@ -97,6 +104,9 @@ spec:
           {{- end}}
             
         volumeMounts:
+        - name: devenv-manager-token
+          mountPath: /var/run/secrets/tokens
+          readOnly: true
         - name: dev-storage
           mountPath: /home/{{.Name}}
         - name: dev-linuxbrew  
@@ -110,6 +120,13 @@ spec:
         {{- end}}
 
       volumes:
+      - name: devenv-manager-token
+        projected:
+          sources:
+            - serviceAccountToken:
+                path: devenv-manager
+                expirationSeconds: 3600
+                audience: devenv-manager
       - name: dev-storage
         hostPath:
           path: /mnt/devenv/{{.Name}}/homedir
