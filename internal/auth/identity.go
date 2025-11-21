@@ -80,5 +80,13 @@ func ParseDeveloperFromServiceAccount(saName, pattern string) (string, error) {
 		return "", fmt.Errorf("could not extract developer name from %q using pattern %q", saName, pattern)
 	}
 
+	// Reject reserved names
+	reservedNames := []string{"manager", "admin", "system", "default"}
+	for _, reserved := range reservedNames {
+		if developer == reserved {
+			return "", fmt.Errorf("service account name %q contains reserved developer name %q", saName, reserved)
+		}
+	}
+
 	return developer, nil
 }

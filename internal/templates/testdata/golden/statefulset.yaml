@@ -16,6 +16,7 @@ spec:
       labels:
         app: devenv-testuser
         component: devenv
+        developer: testuser
     spec:
       affinity:
         nodeAffinity:
@@ -53,6 +54,10 @@ spec:
           failureThreshold: 6
 
         env:
+        - name: DEVENV_MANAGER_URL
+          value: ""
+        - name: DEVELOPER
+          value: "testuser"
         - name: GITHUB_TOKEN
           valueFrom:
             secretKeyRef:
@@ -74,6 +79,9 @@ spec:
             memory: "16Gi"
             
         volumeMounts:
+        - name: devenv-manager-token
+          mountPath: /var/run/secrets/tokens
+          readOnly: true
         - name: dev-storage
           mountPath: /home/testuser
         - name: dev-linuxbrew  
@@ -87,6 +95,13 @@ spec:
           mountPath: /config
 
       volumes:
+      - name: devenv-manager-token
+        projected:
+          sources:
+            - serviceAccountToken:
+                path: devenv-manager
+                expirationSeconds: 3600
+                audience: devenv-manager
       - name: dev-storage
         hostPath:
           path: /mnt/devenv/testuser/homedir
