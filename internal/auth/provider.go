@@ -4,8 +4,6 @@ import "context"
 
 // AuthProvider defines the interface for authentication providers
 // Different providers (K8s SA, GitHub, OIDC) implement this interface
-// AuthProvider defines the interface for authentication providers
-// Different providers (K8s SA, GitHub, OIDC) implement this interface
 type AuthProvider interface {
 	// Authenticate validates the provided token and returns an Identity.
 	// It returns an error if the token is invalid, expired, or authentication fails.
