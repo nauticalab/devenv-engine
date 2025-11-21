@@ -1,0 +1,32 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: devenv-manager
+  namespace: devenv
+  labels:
+    app.kubernetes.io/name: devenv-manager
+    app.kubernetes.io/component: manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: devenv-manager
+subjects:
+  - kind: ServiceAccount
+    name: devenv-manager
+    namespace: devenv
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: devenv-manager-tokenreview
+  labels:
+    app.kubernetes.io/name: devenv-manager
+    app.kubernetes.io/component: manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: devenv-manager-tokenreview
+subjects:
+  - kind: ServiceAccount
+    name: devenv-manager
+    namespace: devenv

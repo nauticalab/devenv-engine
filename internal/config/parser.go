@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -45,7 +46,18 @@ func LoadGlobalConfig(configDir string) (*BaseConfig, error) {
 // This function does NOT merge with global defaults - use LoadDeveloperConfigWithGlobalDefaults
 // for that functionality.
 func LoadDeveloperConfig(configDir, developerName string) (*DevEnvConfig, error) {
+	// Validate developer name
+	if err := validateDeveloperName(developerName); err != nil {
+		return nil, fmt.Errorf("invalid developer name: %w", err)
+	}
+
 	developerDir := filepath.Join(configDir, developerName)
+
+	// Validate path is within configDir
+	if err := validateDeveloperPath(configDir, developerDir); err != nil {
+		return nil, fmt.Errorf("path validation failed: %w", err)
+	}
+
 	configPath := filepath.Join(developerDir, "devenv-config.yaml")
 
 	// Check if the config file exists
@@ -81,6 +93,10 @@ func LoadDeveloperConfig(configDir, developerName string) (*DevEnvConfig, error)
 // This is the recommended loading function that provides the complete configuration hierarchy:
 // System defaults → Global config → User config
 func LoadDeveloperConfigWithBaseConfig(configDir, developerName string, baseConfig *BaseConfig) (*DevEnvConfig, error) {
+	// Validate developer name
+	if err := validateDeveloperName(developerName); err != nil {
+		return nil, fmt.Errorf("invalid developer name: %w", err)
+	}
 
 	// Step 2: Create user config pre-populated with global config values
 	userConfig := &DevEnvConfig{
@@ -89,6 +105,12 @@ func LoadDeveloperConfigWithBaseConfig(configDir, developerName string, baseConf
 
 	// Step 3: Load user YAML
 	developerDir := filepath.Join(configDir, developerName)
+
+	// Validate path is within configDir
+	if err := validateDeveloperPath(configDir, developerDir); err != nil {
+		return nil, fmt.Errorf("path validation failed: %w", err)
+	}
+
 	configPath := filepath.Join(developerDir, "devenv-config.yaml")
 
 	// Check if the config file exists
@@ -271,4 +293,49 @@ func normalizeSSHKeys(sshKeyField any) ([]string, error) {
 	default:
 		return nil, fmt.Errorf("SSH key field must be string or array of strings, got %T", sshKeyField)
 	}
+}
+
+// validateDeveloperName validates that a developer name is safe and doesn't contain path traversal sequences
+func validateDeveloperName(name string) error {
+	// Only allow alphanumeric, dash, underscore
+	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, name)
+	if !matched {
+		return fmt.Errorf("developer name must be alphanumeric with dashes/underscores only")
+	}
+
+	// Explicit check for path traversal
+	if strings.Contains(name, "..") {
+		return fmt.Errorf("developer name cannot contain '..'")
+	}
+
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return fmt.Errorf("developer name cannot contain path separators")
+	}
+
+	if len(name) == 0 || len(name) > 64 {
+		return fmt.Errorf("developer name must be 1-64 characters")
+	}
+
+	return nil
+}
+
+// validateDeveloperPath ensures the developer directory is within the config directory
+func validateDeveloperPath(configDir, developerDir string) error {
+	// Ensure the resolved path is within configDir
+	absConfigDir, err := filepath.Abs(configDir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve config directory: %w", err)
+	}
+
+	absDeveloperDir, err := filepath.Abs(developerDir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve developer directory: %w", err)
+	}
+
+	// Check that developer dir is a child of config dir
+	if !strings.HasPrefix(absDeveloperDir, absConfigDir+string(filepath.Separator)) {
+		return fmt.Errorf("developer directory must be within config directory")
+	}
+
+	return nil
 }

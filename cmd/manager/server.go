@@ -14,9 +14,11 @@ import (
 
 // ServerConfig holds the configuration for the server
 type ServerConfig struct {
-	Port     int
-	Bind     string
-	Audience string
+	Port        int
+	Bind        string
+	Audience    string
+	TLSCertPath string
+	TLSKeyPath  string
 }
 
 var serverConfig ServerConfig
@@ -42,6 +44,8 @@ func init() {
 	serverCmd.Flags().IntVarP(&serverConfig.Port, "port", "p", 8080, "Port to listen on")
 	serverCmd.Flags().StringVarP(&serverConfig.Bind, "bind", "b", "0.0.0.0", "Address to bind to")
 	serverCmd.Flags().StringVar(&serverConfig.Audience, "audience", "devenv-manager", "Expected token audience for service account tokens")
+	serverCmd.Flags().StringVar(&serverConfig.TLSCertPath, "tls-cert", "/certs/tls.crt", "Path to TLS certificate")
+	serverCmd.Flags().StringVar(&serverConfig.TLSKeyPath, "tls-key", "/certs/tls.key", "Path to TLS private key")
 }
 
 func runServer(cmd *cobra.Command, args []string) error {
@@ -56,13 +60,15 @@ func runServer(cmd *cobra.Command, args []string) error {
 
 	// Build server configuration
 	config := api.ServerConfig{
-		Port:      serverConfig.Port,
-		Audience:  serverConfig.Audience,
-		K8sClient: k8sClient,
-		Version:   version,
-		GitCommit: gitCommit,
-		BuildTime: buildTime,
-		GoVersion: "", // Not needed for now, can be added to build vars later
+		Port:        serverConfig.Port,
+		Audience:    serverConfig.Audience,
+		K8sClient:   k8sClient,
+		Version:     version,
+		GitCommit:   gitCommit,
+		BuildTime:   buildTime,
+		GoVersion:   "", // Not needed for now, can be added to build vars later
+		TLSCertPath: serverConfig.TLSCertPath,
+		TLSKeyPath:  serverConfig.TLSKeyPath,
 	}
 
 	// Create the API server

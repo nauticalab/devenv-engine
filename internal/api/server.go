@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
 	"github.com/nauticalab/devenv-engine/internal/auth"
 	"github.com/nauticalab/devenv-engine/internal/k8s"
 )
@@ -23,6 +24,10 @@ type Server struct {
 	providers map[string]auth.AuthProvider
 	// addr is the address the server listens on
 	addr string
+	// tlsCertPath is the path to the TLS certificate file
+	tlsCertPath string
+	// tlsKeyPath is the path to the TLS private key file
+	tlsKeyPath string
 }
 
 // ServerConfig holds configuration for the API server
@@ -41,6 +46,10 @@ type ServerConfig struct {
 	BuildTime string
 	// GoVersion is the Go version used for the build
 	GoVersion string
+	// TLSCertPath is the path to the TLS certificate file
+	TLSCertPath string
+	// TLSKeyPath is the path to the TLS private key file
+	TLSKeyPath string
 }
 
 // NewServer creates a new API server with the given configuration
@@ -74,10 +83,12 @@ func NewServer(config ServerConfig) (*Server, error) {
 	addr := fmt.Sprintf(":%d", config.Port)
 
 	return &Server{
-		router:    router,
-		handler:   handler,
-		providers: providers,
-		addr:      addr,
+		router:      router,
+		handler:     handler,
+		providers:   providers,
+		addr:        addr,
+		tlsCertPath: config.TLSCertPath,
+		tlsKeyPath:  config.TLSKeyPath,
 	}, nil
 }
 
@@ -95,23 +106,36 @@ func setupMiddleware(router *chi.Mux, providers map[string]auth.AuthProvider) {
 	// Timeout for requests
 	router.Use(middleware.Timeout(60 * time.Second))
 
-	// Auth middleware (for protected routes)
-	authMiddleware := auth.Middleware(providers)
-
-	// Public routes (no auth)
-	router.Group(func(r chi.Router) {
-		r.Get("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
-			respondSuccess(w, HealthResponse{
-				Status:    "ok",
-				Timestamp: time.Now(),
-			})
+	// Security headers
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			w.Header().Set("X-Frame-Options", "DENY")
+			w.Header().Set("X-XSS-Protection", "1; mode=block")
+			w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+			w.Header().Set("Content-Security-Policy", "default-src 'none'")
+			next.ServeHTTP(w, r)
 		})
 	})
 
-	// Protected routes (require auth)
-	router.Group(func(r chi.Router) {
-		r.Use(authMiddleware)
-		// Routes will be added in setupRoutes
+	// Rate limiting: 100 requests per minute per IP
+	router.Use(httprate.LimitByIP(100, 1*time.Minute))
+
+	// Create auth middleware
+	authMiddleware := auth.Middleware(providers)
+
+	// Apply authentication globally with exemptions for public endpoints
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Exempt public endpoints
+			if r.URL.Path == "/api/v1/health" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Apply authentication to all other endpoints
+			authMiddleware(next).ServeHTTP(w, r)
+		})
 	})
 }
 
@@ -145,6 +169,13 @@ func (s *Server) Start() error {
 		IdleTimeout:  60 * time.Second,
 	}
 
+	// Check if TLS is configured
+	if s.tlsCertPath != "" && s.tlsKeyPath != "" {
+		log.Printf("Starting HTTPS server with TLS")
+		return server.ListenAndServeTLS(s.tlsCertPath, s.tlsKeyPath)
+	}
+
+	log.Printf("Starting HTTP server (TLS not configured)")
 	return server.ListenAndServe()
 }
 

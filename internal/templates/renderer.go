@@ -17,7 +17,7 @@ import (
 var devTemplatesToRender = []string{"serviceaccount", "statefulset", "service", "env-vars",
 	"startup-scripts", "ingress"}
 
-var systemTemplatesToRender = []string{"namespace", "manager/deployment", "manager/service", "manager/serviceaccount", "manager/rbac"}
+var systemTemplatesToRender = []string{"namespace", "manager/deployment", "manager/service", "manager/serviceaccount", "manager/role", "manager/rolebinding"}
 
 // Embed all devTemplates and scripts at compile time
 //

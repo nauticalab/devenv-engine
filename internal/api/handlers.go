@@ -74,12 +74,6 @@ func (h *Handler) ListPods(w http.ResponseWriter, r *http.Request) {
 	// Build label selector to filter by developer
 	labelSelector := fmt.Sprintf("developer=%s", developer)
 
-	// Add additional labels if provided
-	additionalLabels := r.URL.Query().Get("labels")
-	if additionalLabels != "" {
-		labelSelector = fmt.Sprintf("%s,%s", labelSelector, additionalLabels)
-	}
-
 	log.Printf("Listing pods for developer=%s in namespace=%s with labels=%s", developer, namespace, labelSelector)
 
 	// List pods from Kubernetes

@@ -1,0 +1,32 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: devenv-manager
+  namespace: devenv
+  labels:
+    app.kubernetes.io/name: devenv-manager
+    app.kubernetes.io/component: manager
+rules:
+  # Pod management in devenv namespace only
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+  
+  # Pod logs (for future features)
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+# TokenReview still needs cluster scope
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: devenv-manager-tokenreview
+  labels:
+    app.kubernetes.io/name: devenv-manager
+    app.kubernetes.io/component: manager
+rules:
+  # Token validation (cluster-scoped resource)
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
