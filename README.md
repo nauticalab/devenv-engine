@@ -6,7 +6,7 @@ Authored by NauticaLab with passion.
 
 ## Overview
 
-DevEnv Engine provides:
+DevENV Engine provides:
 
 - **CLI Tool**: Command-line interface for managing developer environment configurations
 - **Manager API**: Centralized HTTP API server for remote pod management with zero-trust authentication
@@ -17,8 +17,8 @@ DevEnv Engine provides:
 
 The system consists of two main components:
 
-1. **DevEnv CLI** (`devenv`): Client tool for generating manifests and managing pods
-2. **DevEnv Manager** (`manager`): HTTP API server running in-cluster for pod management
+1. **DevENV CLI** (`devenv`): Client tool for generating manifests and managing pods
+2. **DevENV Manager** (`manager`): HTTP API server running in-cluster for pod management
 
 ### Authentication & Authorization
 
@@ -99,7 +99,7 @@ The `--remote` flag uses the Manager API instead of direct Kubernetes access, wh
 
 ### Deploying the Manager
 
-The DevEnv Manager runs as a deployment in your Kubernetes cluster:
+The DevENV Manager runs as a deployment in your Kubernetes cluster:
 
 ```bash
 # Deploy the manager

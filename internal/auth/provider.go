@@ -4,12 +4,14 @@ import "context"
 
 // AuthProvider defines the interface for authentication providers
 // Different providers (K8s SA, GitHub, OIDC) implement this interface
+// AuthProvider defines the interface for authentication providers
+// Different providers (K8s SA, GitHub, OIDC) implement this interface
 type AuthProvider interface {
-	// Authenticate validates the provided token and returns an Identity
-	// Returns error if token is invalid, expired, or authentication fails
+	// Authenticate validates the provided token and returns an Identity.
+	// It returns an error if the token is invalid, expired, or authentication fails.
 	Authenticate(ctx context.Context, token string) (*Identity, error)
 
-	// Name returns a human-readable name for the provider
+	// Name returns a human-readable name for the provider (e.g., "Kubernetes Service Account")
 	Name() string
 
 	// Type returns the provider type identifier (e.g., "k8s-sa", "github")

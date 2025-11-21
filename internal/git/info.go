@@ -1,3 +1,6 @@
+// Package git provides utilities for interacting with Git repositories.
+// It includes functionality to retrieve repository information such as commit hash,
+// branch name, tags, and dirty status.
 package git
 
 import (
@@ -7,12 +10,18 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 )
 
+// GitInfo holds information about a git repository
 type GitInfo struct {
+	// Repository is the underlying go-git repository object
 	Repository *git.Repository
+	// CommitHash is the current HEAD commit hash
 	CommitHash string
-	Branch     string
-	Tag        []string
-	IsDirty    bool
+	// Branch is the current branch name
+	Branch string
+	// Tag is a list of tags pointing to the current commit
+	Tag []string
+	// IsDirty indicates if the working tree has uncommitted changes
+	IsDirty bool
 }
 
 func GetGitInfo(repoPath string) (*GitInfo, error) {

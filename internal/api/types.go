@@ -4,14 +4,22 @@ import "time"
 
 // Pod represents a pod in the API response
 type Pod struct {
-	Name      string `json:"name"`
+	// Name is the name of the pod
+	Name string `json:"name"`
+	// Namespace is the namespace where the pod is running
 	Namespace string `json:"namespace"`
-	Status    string `json:"status"`
-	Restarts  int32  `json:"restarts"`
-	Age       string `json:"age"`
+	// Status is the current phase of the pod (e.g., Running, Pending)
+	Status string `json:"status"`
+	// Restarts is the total number of restarts across all containers in the pod
+	Restarts int32 `json:"restarts"`
+	// Age is the human-readable age of the pod
+	Age string `json:"age"`
+	// Developer is the name of the developer who owns the pod
 	Developer string `json:"developer"`
-	NodeName  string `json:"nodeName,omitempty"`
-	PodIP     string `json:"podIP,omitempty"`
+	// NodeName is the name of the node where the pod is scheduled
+	NodeName string `json:"nodeName,omitempty"`
+	// PodIP is the IP address of the pod
+	PodIP string `json:"podIP,omitempty"`
 }
 
 // ListPodsRequest represents query parameters for listing pods

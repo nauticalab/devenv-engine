@@ -1,3 +1,5 @@
+// Package api provides the HTTP server implementation for the DevENV Manager.
+// It defines the API handlers, request/response types, and error handling logic.
 package api
 
 import (

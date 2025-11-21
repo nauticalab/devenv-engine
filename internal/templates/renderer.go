@@ -1,3 +1,5 @@
+// Package templates provides functionality for rendering Kubernetes manifests and scripts
+// using Go templates. It supports both developer-specific and system-wide templates.
 package templates
 
 import (
@@ -24,8 +26,11 @@ var templates embed.FS
 
 // Renderer handles template operations
 type Renderer[T config.BaseConfig | config.DevEnvConfig] struct {
-	outputDir       string
-	templateRoot    string
+	// outputDir is the directory where generated files will be saved
+	outputDir string
+	// templateRoot is the root directory for templates within the embedded filesystem
+	templateRoot string
+	// targetTemplates is the list of template names to render
 	targetTemplates []string
 }
 
@@ -114,7 +119,7 @@ func (r *Renderer[T]) RenderTemplate(templateName string, config *T) error {
 	}
 	defer outputFile.Close()
 
-	// Execute template with DevEnvConfig - simple and clean!
+	// Execute template with DevENV configuration - simple and clean!
 	if err := tmpl.Execute(outputFile, config); err != nil {
 		return fmt.Errorf("failed to render template %s: %w", templateName, err)
 	}

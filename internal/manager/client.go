@@ -1,3 +1,5 @@
+// Package manager provides a client for interacting with the DevENV Manager API.
+// It handles authentication, request execution, and response parsing.
 package manager
 
 import (
@@ -21,20 +23,28 @@ const (
 	DefaultTimeout = 30 * time.Second
 )
 
-// Client represents an HTTP client for the DevEnv Manager API
+// Client represents an HTTP client for the DevENV Manager API
 type Client struct {
-	baseURL    string
+	// baseURL is the base URL of the manager API
+	baseURL string
+	// httpClient is the underlying HTTP client
 	httpClient *http.Client
-	tokenPath  string
-	authType   string
+	// tokenPath is the file path to the service account token
+	tokenPath string
+	// authType is the authentication type to use (e.g., "k8s-sa")
+	authType string
 }
 
 // ClientConfig holds configuration for the manager client
 type ClientConfig struct {
-	BaseURL   string
+	// BaseURL is the base URL of the manager API
+	BaseURL string
+	// TokenPath is the file path to the service account token
 	TokenPath string
-	Timeout   time.Duration
-	AuthType  string
+	// Timeout is the request timeout
+	Timeout time.Duration
+	// AuthType is the authentication type to use
+	AuthType string
 }
 
 // NewClient creates a new manager API client

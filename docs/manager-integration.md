@@ -1,6 +1,6 @@
-# DevEnv Manager Integration
+# DevENV Manager Integration
 
-This document describes the integration of the DevEnv Manager API into the existing devenv generate system.
+This document describes the integration of the DevENV Manager API into the existing devenv generate system.
 
 ## Changes Made
 
@@ -145,7 +145,7 @@ devenv pods list --remote
 │  │ devenv-system namespace                               │  │
 │  │                                                        │  │
 │  │  ┌──────────────────────────────────────────────┐   │  │
-│  │  │ DevEnv Manager Deployment                     │   │  │
+│  │  │ DevENV Manager Deployment                     │   │  │
 │  │  │  - HTTP API (port 8080)                       │   │  │
 │  │  │  - TokenReview authentication                 │   │  │
 │  │  │  - Developer-scoped authorization             │   │  │

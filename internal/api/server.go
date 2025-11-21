@@ -15,20 +15,31 @@ import (
 
 // Server represents the HTTP API server
 type Server struct {
-	router    *chi.Mux
-	handler   *Handler
+	// router is the HTTP request multiplexer
+	router *chi.Mux
+	// handler contains the API route handlers
+	handler *Handler
+	// providers is a map of registered authentication providers
 	providers map[string]auth.AuthProvider
-	addr      string
+	// addr is the address the server listens on
+	addr string
 }
 
 // ServerConfig holds configuration for the API server
 type ServerConfig struct {
-	Port      int
-	Audience  string
+	// Port is the TCP port to listen on
+	Port int
+	// Audience is the expected audience for JWT tokens
+	Audience string
+	// K8sClient is the Kubernetes client
 	K8sClient *k8s.Client
-	Version   string
+	// Version is the application version
+	Version string
+	// GitCommit is the git commit hash
 	GitCommit string
+	// BuildTime is the build timestamp
 	BuildTime string
+	// GoVersion is the Go version used for the build
 	GoVersion string
 }
 

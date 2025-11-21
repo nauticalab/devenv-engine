@@ -1,10 +1,10 @@
-# DevEnv Manager Deployment
+# DevENV Manager Deployment
 
-This directory contains Kubernetes manifests for deploying the DevEnv Manager API server.
+This directory contains Kubernetes manifests for deploying the DevENV Manager API server.
 
 ## Architecture
 
-The DevEnv Manager provides an HTTP API for managing developer environment pods with authentication and authorization:
+The DevENV Manager provides an HTTP API for managing developer environment pods with authentication and authorization:
 
 - **Authentication**: Kubernetes service account tokens (projected tokens with audience binding)
 - **Authorization**: Developer-scoped access (users can only see/manage their own pods)
@@ -89,7 +89,7 @@ kubectl create serviceaccount devenv-eywalker -n devenv-system
 kubectl label serviceaccount devenv-eywalker -n devenv-system developer=eywalker
 ```
 
-## DevEnv Pod Configuration
+## DevENV Pod Configuration
 
 Developer environment pods must be configured with:
 
@@ -137,7 +137,7 @@ spec:
 
 ## Usage
 
-### From DevEnv Pod
+### From DevENV Pod
 
 ```bash
 # List your pods via manager

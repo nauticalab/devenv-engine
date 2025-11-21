@@ -10,9 +10,12 @@ import (
 
 // K8sSAProvider implements authentication via Kubernetes service account tokens
 type K8sSAProvider struct {
-	client      *k8s.Client
-	audience    string // Expected audience for tokens (e.g., "devenv-manager")
-	namePattern string // Pattern to extract developer name (e.g., "devenv-{developer}")
+	// client is the Kubernetes client used for TokenReview
+	client *k8s.Client
+	// audience is the expected audience for tokens (e.g., "devenv-manager")
+	audience string
+	// namePattern is the pattern to extract developer name (e.g., "devenv-{developer}")
+	namePattern string
 }
 
 // NewK8sSAProvider creates a new Kubernetes service account authentication provider

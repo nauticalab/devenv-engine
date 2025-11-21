@@ -1,6 +1,6 @@
-# DevEnv Manager Troubleshooting Guide
+# DevENV Manager Troubleshooting Guide
 
-This guide covers common issues and solutions when working with the DevEnv Manager API.
+This guide covers common issues and solutions when working with the DevENV Manager API.
 
 ## Table of Contents
 
@@ -101,7 +101,7 @@ Should be: `devenv-<username>` (e.g., `devenv-eywalker`)
 
 **Explanation:**
 
-DevEnv Manager enforces developer-scoped authorization. Users can only access pods with `developer={username}` label.
+DevENV Manager enforces developer-scoped authorization. Users can only access pods with `developer={username}` label.
 
 **Verification:**
 

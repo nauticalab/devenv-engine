@@ -23,8 +23,8 @@ var serverConfig ServerConfig
 
 var serverCmd = &cobra.Command{
 	Use:   "serve",
-	Short: "Start the DevEnv Manager HTTP API server",
-	Long: `Start the DevEnv Manager HTTP API server.
+	Short: "Start the DevENV Manager HTTP API server",
+	Long: `Start the DevENV Manager HTTP API server.
 
 The server provides an HTTP API for managing developer environments:
   - List pods for authenticated developer
@@ -72,7 +72,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 	}
 
 	addr := fmt.Sprintf("%s:%d", serverConfig.Bind, serverConfig.Port)
-	fmt.Printf("Starting DevEnv Manager API server on %s\n", addr)
+	fmt.Printf("Starting DevENV Manager API server on %s\n", addr)
 	fmt.Printf("Token audience: %s\n", serverConfig.Audience)
 	fmt.Printf("\nEndpoints:\n")
 	fmt.Printf("  GET  /api/v1/health          - Health check\n")

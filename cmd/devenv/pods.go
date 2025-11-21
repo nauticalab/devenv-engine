@@ -29,7 +29,7 @@ var podsCmd = &cobra.Command{
 	Long: `List and manage developer environment pods.
 
 By default, connects directly to Kubernetes API.
-Use --remote to connect via the DevEnv Manager API server.`,
+Use --remote to connect via the DevENV Manager API server.`,
 }
 
 var podsListCmd = &cobra.Command{

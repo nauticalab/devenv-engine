@@ -1,3 +1,6 @@
+// Package k8s provides a wrapper around the Kubernetes client-go library.
+// It simplifies common operations such as listing pods, authenticating tokens,
+// and managing Kubernetes resources for the DevEnv engine.
 package k8s
 
 import (
@@ -15,6 +18,7 @@ import (
 
 // Client wraps the Kubernetes clientset and provides helper methods
 type Client struct {
+	// clientset is the standard Kubernetes clientset
 	clientset *kubernetes.Clientset
 }
 

@@ -1,3 +1,5 @@
+// Package validation provides logic for validating developer configurations.
+// It includes checks for port conflicts, valid port ranges, and other configuration rules.
 package validation
 
 import (
@@ -17,30 +19,43 @@ const (
 
 // PortValidator handles SSH port validation across developer configurations
 type PortValidator struct {
+	// configDir is the directory containing developer configurations
 	configDir string
 }
 
 // ValidationResult contains all validation results
 type ValidationResult struct {
-	Errors   []ValidationError
+	// Errors is a list of fatal validation errors
+	Errors []ValidationError
+	// Warnings is a list of non-fatal validation warnings
 	Warnings []ValidationWarning
-	IsValid  bool
+	// IsValid indicates if the validation passed (no errors)
+	IsValid bool
 }
 
 // ValidationError represents a validation failure
 type ValidationError struct {
-	Type     string // "conflict", "out_of_range", "invalid"
-	Port     int
-	Users    []string
-	Message  string
+	// Type is the category of error (e.g., "conflict", "out_of_range", "invalid")
+	Type string
+	// Port is the port number involved in the error (if applicable)
+	Port int
+	// Users is a list of developers involved in the error
+	Users []string
+	// Message is a human-readable error description
+	Message string
+	// FilePath is the path to the configuration file causing the error
 	FilePath string
 }
 
 // ValidationWarning represents a non-fatal validation issue
 type ValidationWarning struct {
-	Type     string
-	User     string
-	Message  string
+	// Type is the category of warning
+	Type string
+	// User is the developer associated with the warning
+	User string
+	// Message is a human-readable warning description
+	Message string
+	// FilePath is the path to the configuration file
 	FilePath string
 }
 

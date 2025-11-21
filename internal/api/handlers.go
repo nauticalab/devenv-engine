@@ -14,10 +14,15 @@ import (
 
 // Handler holds dependencies for HTTP handlers
 type Handler struct {
+	// k8sClient is the Kubernetes client for interacting with the cluster
 	k8sClient *k8s.Client
-	version   string
+	// version is the application version
+	version string
+	// gitCommit is the git commit hash of the build
 	gitCommit string
+	// buildTime is the time when the application was built
 	buildTime string
+	// goVersion is the Go version used to build the application
 	goVersion string
 }
 

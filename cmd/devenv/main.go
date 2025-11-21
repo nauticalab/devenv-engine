@@ -1,4 +1,4 @@
-// DevEnv CLI generates Kubernetes manifests for developer environments.
+// DevENV CLI generates Kubernetes manifests for developer environments.
 // This command-line tool processes YAML configurations and creates complete
 // Kubernetes resources including StatefulSets, Services, and ConfigMaps.
 //

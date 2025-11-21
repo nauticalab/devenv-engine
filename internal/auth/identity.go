@@ -1,3 +1,6 @@
+// Package auth provides authentication mechanisms for the DevENV Manager.
+// It supports pluggable authentication providers (e.g., Kubernetes Service Accounts)
+// and middleware for validating requests.
 package auth
 
 import (
