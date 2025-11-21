@@ -15,7 +15,7 @@ func TestNewBaseConfigWithDefaults(t *testing.T) {
 	// --- Basic defaults (scalar fields) ---
 	assert.Equal(t, "ubuntu:22.04", cfg.Image)
 	assert.Equal(t, 1000, cfg.UID)
-	assert.Equal(t, "/opt/venv/bin", cfg.PythonBinPath)
+	assert.Equal(t, "/usr/bin/python3", cfg.PythonBinPath)
 
 	// --- Container setup toggles ---
 	assert.True(t, cfg.InstallHomebrew)
@@ -622,7 +622,7 @@ func TestNewBaseConfigWithDefaults_ExactValues(t *testing.T) {
 	require.True(t, cfg.InstallHomebrew)
 	require.False(t, cfg.ClearLocalPackages)
 	require.False(t, cfg.ClearVSCodeCache)
-	require.Equal(t, "/opt/venv/bin", cfg.PythonBinPath)
+	require.Equal(t, "/usr/bin/python3", cfg.PythonBinPath)
 
 	// Resources (canonical)
 	require.Equal(t, int(2), cfg.Resources.CPU)           // 2 cores

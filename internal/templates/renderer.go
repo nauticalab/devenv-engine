@@ -15,7 +15,7 @@ import (
 var devTemplatesToRender = []string{"serviceaccount", "statefulset", "service", "env-vars",
 	"startup-scripts", "ingress"}
 
-var systemTemplatesToRender = []string{"namespace"}
+var systemTemplatesToRender = []string{"namespace", "manager/deployment", "manager/service", "manager/serviceaccount", "manager/rbac"}
 
 // Embed all devTemplates and scripts at compile time
 //
@@ -98,16 +98,16 @@ func (r *Renderer[T]) RenderTemplate(templateName string, config *T) error {
 		return fmt.Errorf("failed to parse template %s: %w", templateName, err)
 	}
 
-	// Create output directory if it doesn't exist
-	if err := os.MkdirAll(r.outputDir, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory %s: %w", r.outputDir, err)
-	}
-
 	// Output filename is simply template name + .yaml
 	outputFilename := fmt.Sprintf("%s.yaml", templateName)
 
 	// Create output file
 	outputPath := filepath.Join(r.outputDir, outputFilename)
+
+	// Create output directory if it doesn't exist
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		return fmt.Errorf("failed to create output directory %s: %w", filepath.Dir(outputPath), err)
+	}
 	outputFile, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("failed to create output file %s: %w", outputPath, err)

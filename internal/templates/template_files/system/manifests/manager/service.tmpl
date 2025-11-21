@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devenv-manager
+  namespace: {{.Namespace}}
+  labels:
+    app: devenv-manager
+spec:
+  selector:
+    app: devenv-manager
+  ports:
+  - port: 80
+    targetPort: {{.ManagerPort}}
+    name: http
+  type: ClusterIP

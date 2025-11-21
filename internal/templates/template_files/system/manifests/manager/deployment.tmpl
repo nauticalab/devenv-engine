@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devenv-manager
+  namespace: {{.Namespace}}
+  labels:
+    app: devenv-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devenv-manager
+  template:
+    metadata:
+      labels:
+        app: devenv-manager
+    spec:
+      serviceAccountName: devenv-manager
+      containers:
+      - name: manager
+        image: nauticalab/devenv-manager:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{.ManagerPort}}
+          name: http
+        args:
+        - serve
+        - --port={{.ManagerPort}}
+        - --audience=devenv-manager
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: http
+          initialDelaySeconds: 2
+          periodSeconds: 5

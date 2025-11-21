@@ -40,6 +40,7 @@ type BaseConfig struct {
 	Namespace       string `yaml:"namespace,omitempty" validate:"omitempty,min=1,max=63,hostname"`
 	EnvironmentName string `yaml:"environmentName,omitempty" validate:"omitempty,min=1,max=63,hostname"`
 	ManagerURL      string `yaml:"managerURL,omitempty" validate:"omitempty,url"`
+	ManagerPort     int    `yaml:"managerPort,omitempty" validate:"omitempty,min=1,max=65535"`
 }
 
 // DevEnvConfig represents the complete configuration for a developer environment.
@@ -115,7 +116,7 @@ func NewBaseConfigWithDefaults() BaseConfig {
 		InstallHomebrew:    true,
 		ClearLocalPackages: false,
 		ClearVSCodeCache:   false,
-		PythonBinPath:      "/opt/venv/bin",
+		PythonBinPath:      "/usr/bin/python3",
 		Resources: ResourceConfig{
 			CPU:     2,      // Default CPU
 			Memory:  "8Gi",  // Default Memory
@@ -132,6 +133,7 @@ func NewBaseConfigWithDefaults() BaseConfig {
 		Namespace:       "devenv",                     // Default namespace
 		EnvironmentName: "development",                // Default environment name
 		ManagerURL:      "http://devenv-manager:8080", // Default manager URL
+		ManagerPort:     8080,                         // Default manager port
 	}
 }
 

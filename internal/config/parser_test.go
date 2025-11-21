@@ -51,7 +51,7 @@ resources:
 		// Unspecified fields keep defaults
 		assert.False(t, cfg.ClearLocalPackages)
 		assert.False(t, cfg.ClearVSCodeCache)
-		assert.Equal(t, "/opt/venv/bin", cfg.PythonBinPath)
+		assert.Equal(t, "/usr/bin/python3", cfg.PythonBinPath)
 		assert.Equal(t, 1000, cfg.UID)
 		assert.Equal(t, "20Gi", cfg.Resources.Storage) // default storage unchanged
 		assert.Equal(t, 0, cfg.Resources.GPU)          // default GPU unchanged
@@ -68,7 +68,7 @@ resources:
 		assert.True(t, cfg.InstallHomebrew)
 		assert.False(t, cfg.ClearLocalPackages)
 		assert.False(t, cfg.ClearVSCodeCache)
-		assert.Equal(t, "/opt/venv/bin", cfg.PythonBinPath)
+		assert.Equal(t, "/usr/bin/python3", cfg.PythonBinPath)
 		assert.Equal(t, 1000, cfg.UID)
 
 		// Canonical resource defaults (CPU millicores, Memory Mi)
@@ -317,10 +317,10 @@ installHomebrew: false
 
 		// Defaults + user overrides
 		assert.Equal(t, "alice", cfg.Name)
-		assert.Equal(t, "ubuntu:22.04", cfg.Image)          // system default
-		assert.False(t, cfg.InstallHomebrew)                // user override
-		assert.False(t, cfg.ClearLocalPackages)             // system default
-		assert.Equal(t, "/opt/venv/bin", cfg.PythonBinPath) // system default
+		assert.Equal(t, "ubuntu:22.04", cfg.Image)             // system default
+		assert.False(t, cfg.InstallHomebrew)                   // user override
+		assert.False(t, cfg.ClearLocalPackages)                // system default
+		assert.Equal(t, "/usr/bin/python3", cfg.PythonBinPath) // system default
 
 		// Canonical resource defaults and formatted getters
 		assert.Equal(t, int(2), cfg.Resources.CPU)           // default 2 cores
