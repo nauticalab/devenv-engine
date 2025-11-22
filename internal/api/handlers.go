@@ -199,3 +199,22 @@ func formatAge(t time.Time) string {
 	days := int(duration.Hours() / 24)
 	return fmt.Sprintf("%dd", days)
 }
+
+// WhoAmI handles GET /api/v1/auth/whoami
+// Returns the identity of the authenticated user
+func (h *Handler) WhoAmI(w http.ResponseWriter, r *http.Request) {
+	identity, ok := auth.GetIdentityFromContext(r.Context())
+	if !ok {
+		respondUnauthorized(w, "Not authenticated")
+		return
+	}
+
+	respondSuccess(w, WhoAmIResponse{
+		Identity: *identity,
+	})
+}
+
+// WhoAmIResponse represents the response for the WhoAmI endpoint
+type WhoAmIResponse struct {
+	auth.Identity
+}

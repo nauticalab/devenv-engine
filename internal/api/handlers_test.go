@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/nauticalab/devenv-engine/internal/auth"
+	"github.com/nauticalab/devenv-engine/internal/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -280,4 +281,51 @@ func TestHandler_DeletePod(t *testing.T) {
 
 	server.handler.DeletePod(w, req)
 	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestHandler_WhoAmI(t *testing.T) {
+	// Setup
+	k8sClient := &k8s.Client{} // Mock client not needed for this test
+	handler := NewHandler(k8sClient, "1.0.0", "abcdef", "now", "1.21")
+
+	// Create request with identity
+	req := httptest.NewRequest("GET", "/api/v1/auth/whoami", nil)
+	identity := &auth.Identity{
+		Type:      "k8s-sa",
+		Username:  "system:serviceaccount:default:devenv-eywalker",
+		Developer: "eywalker",
+	}
+	ctx := auth.WithIdentity(req.Context(), identity)
+	req = req.WithContext(ctx)
+
+	// Create recorder
+	w := httptest.NewRecorder()
+
+	// Execute
+	handler.WhoAmI(w, req)
+
+	// Verify
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response WhoAmIResponse
+	err := json.NewDecoder(w.Body).Decode(&response)
+	assert.NoError(t, err)
+	assert.Equal(t, "eywalker", response.Developer)
+	assert.Equal(t, "k8s-sa", response.Type)
+}
+
+func TestHandler_WhoAmI_Unauthenticated(t *testing.T) {
+	// Setup
+	k8sClient := &k8s.Client{}
+	handler := NewHandler(k8sClient, "1.0.0", "abcdef", "now", "1.21")
+
+	// Create request without identity
+	req := httptest.NewRequest("GET", "/api/v1/auth/whoami", nil)
+	w := httptest.NewRecorder()
+
+	// Execute
+	handler.WhoAmI(w, req)
+
+	// Verify
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }

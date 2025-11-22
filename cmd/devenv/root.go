@@ -27,4 +27,5 @@ func init() {
 	rootCmd.AddCommand(generateCmd)
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(validateCmd)
+	rootCmd.AddCommand(authCmd)
 }

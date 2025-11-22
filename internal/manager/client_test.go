@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nauticalab/devenv-engine/internal/api"
+	"github.com/nauticalab/devenv-engine/internal/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -222,4 +223,34 @@ func TestClient_ParseErrorResponse_Malformed(t *testing.T) {
 	_, err := client.ListPods(context.Background(), "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "HTTP 400")
+}
+
+func TestClient_WhoAmI(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/v1/auth/whoami", r.URL.Path)
+		assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(api.WhoAmIResponse{
+			Identity: auth.Identity{
+				Type:      "k8s-sa",
+				Username:  "user",
+				Developer: "dev",
+			},
+		})
+	}))
+	defer server.Close()
+
+	tmpToken := createTempToken(t, "test-token")
+	defer os.Remove(tmpToken)
+
+	client := NewClient(ClientConfig{
+		BaseURL:   server.URL,
+		TokenPath: tmpToken,
+	})
+
+	whoami, err := client.WhoAmI(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, "dev", whoami.Developer)
+	assert.Equal(t, "k8s-sa", whoami.Type)
 }

@@ -152,6 +152,9 @@ func setupRoutes(router *chi.Mux, handler *Handler) {
 			// Pods endpoints
 			r.Get("/pods", handler.ListPods)
 			r.Delete("/pods/{namespace}/{name}", handler.DeletePod)
+
+			// Auth endpoints
+			r.Get("/auth/whoami", handler.WhoAmI)
 		})
 	})
 }

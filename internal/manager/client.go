@@ -178,6 +178,21 @@ func (c *Client) Version(ctx context.Context) (*api.VersionResponse, error) {
 	return &version, nil
 }
 
+// WhoAmI retrieves the identity of the authenticated user
+func (c *Client) WhoAmI(ctx context.Context) (*api.WhoAmIResponse, error) {
+	resp, err := c.doRequest(ctx, http.MethodGet, "/api/v1/auth/whoami", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var whoami api.WhoAmIResponse
+	if err := parseResponse(resp, &whoami); err != nil {
+		return nil, err
+	}
+
+	return &whoami, nil
+}
+
 // ListPods retrieves the list of pods for the authenticated developer
 func (c *Client) ListPods(ctx context.Context, namespace string) (*api.ListPodsResponse, error) {
 	path := "/api/v1/pods"
