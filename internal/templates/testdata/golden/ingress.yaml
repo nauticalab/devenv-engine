@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: devenv-ingress-testuser
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt"
+    
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: testuser.
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: devenv-http-testuser
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - "*."
+      secretName: http-testuser-tls

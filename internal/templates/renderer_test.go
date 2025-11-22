@@ -57,7 +57,7 @@ func TestRenderTemplate(t *testing.T) {
 		},
 	}
 
-	templates := []string{"statefulset", "service", "env-vars", "startup-scripts"}
+	templates := []string{"statefulset", "service", "env-vars", "startup-scripts", "ingress", "serviceaccount"}
 
 	for _, templateName := range templates {
 		t.Run(templateName, func(t *testing.T) {
@@ -121,7 +121,7 @@ func TestRenderAll(t *testing.T) {
 	require.NoError(t, err, "RenderAll should not return error")
 
 	// Verify all expected files were created
-	expectedFiles := []string{"statefulset.yaml", "service.yaml", "env-vars.yaml", "startup-scripts.yaml"}
+	expectedFiles := []string{"statefulset.yaml", "service.yaml", "env-vars.yaml", "startup-scripts.yaml", "ingress.yaml", "serviceaccount.yaml"}
 
 	for _, filename := range expectedFiles {
 		filePath := filepath.Join(tempDir, filename)
@@ -148,17 +148,43 @@ func TestRenderTemplate_ErrorCases(t *testing.T) {
 		tempDir := t.TempDir()
 		renderer := NewDevRenderer(tempDir)
 
-		err := renderer.RenderTemplate("nonexistent", testConfig)
-		assert.Error(t, err, "Should return error for invalid template")
+		err := renderer.RenderTemplate("non_existent_template", &config.DevEnvConfig{})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "file does not exist")
 	})
 
 	t.Run("invalid output directory", func(t *testing.T) {
 		// Use a path that can't be created (assuming /root is not writable in test)
-		renderer := NewDevRenderer("/root/impossible/path")
+		renderer := NewDevRenderer("/invalid/path/that/cannot/be/created")
 
-		err := renderer.RenderTemplate("configmap", testConfig)
+		err := renderer.RenderTemplate("statefulset", testConfig)
 		assert.Error(t, err, "Should return error for invalid output directory")
 	})
+}
+
+func TestTemplateFuncs(t *testing.T) {
+	funcs := templateFuncs("template_files/dev")
+
+	// Test b64enc
+	b64enc := funcs["b64enc"].(func(string) string)
+	assert.Equal(t, "aGVsbG8=", b64enc("hello"))
+
+	// Test indent
+	indent := funcs["indent"].(func(int, string) string)
+	assert.Equal(t, "line1\n  line2", indent(2, "line1\nline2"))
+
+	// Test getStaticScript (mocking FS is hard here, but we can try reading existing one)
+	// We need to ensure the path exists relative to where test runs.
+	// The renderer uses embedded FS, so we can't easily mock it without changing the code to accept FS interface.
+	// But we can test that the function exists and returns error for missing file.
+	getStaticScript := funcs["getStaticScript"].(func(string) (string, error))
+	_, err := getStaticScript("non-existent-script")
+	assert.Error(t, err)
+
+	// Test getTemplatedScript
+	getTemplatedScript := funcs["getTemplatedScript"].(func(string, *config.DevEnvConfig) (string, error))
+	_, err = getTemplatedScript("non-existent-script", &config.DevEnvConfig{})
+	assert.Error(t, err)
 }
 
 // Command-line flag for updating golden files
