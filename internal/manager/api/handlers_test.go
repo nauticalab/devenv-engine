@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/nauticalab/devenv-engine/internal/auth"
 	"github.com/nauticalab/devenv-engine/internal/k8s"
+	"github.com/nauticalab/devenv-engine/internal/manager/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"

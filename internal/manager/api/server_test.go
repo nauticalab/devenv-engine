@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/nauticalab/devenv-engine/internal/auth"
+	"github.com/nauticalab/devenv-engine/internal/manager/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -46,11 +46,10 @@ func TestClient_ListPods(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	assert.Equal(t, "pod-2", pods.Items[0].Name)
 
-	// Test listing in empty namespace (defaults to default)
+	// Test listing in empty namespace (lists all namespaces)
 	pods, err = client.ListPods(context.Background(), "")
 	assert.NoError(t, err)
-	assert.Len(t, pods.Items, 1)
-	assert.Equal(t, "pod-1", pods.Items[0].Name)
+	assert.Len(t, pods.Items, 2)
 }
 
 func TestClient_ListAllPods(t *testing.T) {
@@ -113,7 +112,7 @@ func TestClient_ListPodsWithLabels(t *testing.T) {
 	assert.Len(t, pods.Items, 0)
 }
 
-func TestClient_ListPodsWithLabels_DefaultNamespace(t *testing.T) {
+func TestClient_ListPodsWithLabels_AllNamespaces(t *testing.T) {
 	clientset := fake.NewSimpleClientset(
 		&corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -126,7 +125,7 @@ func TestClient_ListPodsWithLabels_DefaultNamespace(t *testing.T) {
 
 	client := NewClientWithInterface(clientset)
 
-	// Test with empty namespace
+	// Test with empty namespace (lists all namespaces)
 	pods, err := client.ListPodsWithLabels(context.Background(), "", "app=test")
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)

@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/nauticalab/devenv-engine/internal/auth"
 	"github.com/nauticalab/devenv-engine/internal/k8s"
+	"github.com/nauticalab/devenv-engine/internal/manager/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -130,8 +130,12 @@ func TestServer_AuthMiddleware(t *testing.T) {
 
 type mockProvider struct{}
 
-func (m *mockProvider) Authenticate(ctx context.Context, token string) (*auth.Identity, error) {
+func (m *mockProvider) Authenticate(ctx context.Context, req *http.Request) (*auth.Identity, error) {
 	return nil, nil
+}
+
+func (m *mockProvider) InjectAuth(ctx context.Context, req *http.Request) error {
+	return nil
 }
 
 func (m *mockProvider) Name() string {

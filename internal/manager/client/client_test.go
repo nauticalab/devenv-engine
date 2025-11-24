@@ -1,4 +1,4 @@
-package manager
+package client
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nauticalab/devenv-engine/internal/api"
-	"github.com/nauticalab/devenv-engine/internal/auth"
+	"github.com/nauticalab/devenv-engine/internal/manager/api"
+	"github.com/nauticalab/devenv-engine/internal/manager/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,13 +37,11 @@ func TestClient_ListPods(t *testing.T) {
 	tmpToken := createTempToken(t, "test-token")
 	defer os.Remove(tmpToken)
 
-	client := NewClient(ClientConfig{
-		BaseURL:   server.URL,
-		TokenPath: tmpToken,
-	})
+	authProvider := auth.NewK8sSAProvider(nil, "", "", tmpToken)
+	client := NewClient(server.URL, authProvider)
 
 	// Test list pods
-	resp, err := client.ListPods(context.Background(), "")
+	resp, err := client.ListPods(context.Background(), "", false)
 	require.NoError(t, err)
 	assert.Len(t, resp.Pods, 1)
 	assert.Equal(t, "pod-1", resp.Pods[0].Name)
@@ -65,10 +63,8 @@ func TestClient_DeletePod(t *testing.T) {
 	tmpToken := createTempToken(t, "test-token")
 	defer os.Remove(tmpToken)
 
-	client := NewClient(ClientConfig{
-		BaseURL:   server.URL,
-		TokenPath: tmpToken,
-	})
+	authProvider := auth.NewK8sSAProvider(nil, "", "", tmpToken)
+	client := NewClient(server.URL, authProvider)
 
 	resp, err := client.DeletePod(context.Background(), "default", "test-pod")
 	require.NoError(t, err)
@@ -88,13 +84,9 @@ func TestClient_Health(t *testing.T) {
 	}))
 	defer server.Close()
 
-	tmpToken := createTempToken(t, "test-token")
-	defer os.Remove(tmpToken)
-
-	client := NewClient(ClientConfig{
-		BaseURL:   server.URL,
-		TokenPath: tmpToken,
-	})
+	// Health check doesn't strictly require auth in many cases, but client supports it
+	// If we want to test without auth, we can pass nil provider
+	client := NewClient(server.URL, nil)
 
 	resp, err := client.Health(context.Background())
 	require.NoError(t, err)
@@ -112,15 +104,9 @@ func TestClient_Error(t *testing.T) {
 	}))
 	defer server.Close()
 
-	tmpToken := createTempToken(t, "test-token")
-	defer os.Remove(tmpToken)
+	client := NewClient(server.URL, nil)
 
-	client := NewClient(ClientConfig{
-		BaseURL:   server.URL,
-		TokenPath: tmpToken,
-	})
-
-	_, err := client.ListPods(context.Background(), "")
+	_, err := client.ListPods(context.Background(), "", false)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "API error: Bad Request")
 }
@@ -149,13 +135,7 @@ func TestClient_Version(t *testing.T) {
 	}))
 	defer server.Close()
 
-	tmpToken := createTempToken(t, "test-token")
-	defer os.Remove(tmpToken)
-
-	client := NewClient(ClientConfig{
-		BaseURL:   server.URL,
-		TokenPath: tmpToken,
-	})
+	client := NewClient(server.URL, nil)
 
 	resp, err := client.Version(context.Background())
 	require.NoError(t, err)
@@ -164,23 +144,18 @@ func TestClient_Version(t *testing.T) {
 }
 
 func TestNewClient_Defaults(t *testing.T) {
-	client := NewClient(ClientConfig{
-		BaseURL: "http://example.com",
-	})
+	client := NewClient("http://example.com", nil)
 
 	assert.Equal(t, "http://example.com", client.baseURL)
-	assert.Equal(t, DefaultTokenPath, client.tokenPath)
 	assert.Equal(t, DefaultTimeout, client.httpClient.Timeout)
-	assert.Equal(t, "k8s-sa", client.authType)
+	assert.Nil(t, client.authProvider)
 }
 
 func TestClient_ReadTokenError(t *testing.T) {
-	client := NewClient(ClientConfig{
-		BaseURL:   "http://example.com",
-		TokenPath: "/non/existent/path",
-	})
+	authProvider := auth.NewK8sSAProvider(nil, "", "", "/non/existent/path")
+	client := NewClient("http://example.com", authProvider)
 
-	_, err := client.ListPods(context.Background(), "")
+	_, err := client.ListPods(context.Background(), "", false)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to read token")
 }
@@ -192,15 +167,9 @@ func TestClient_ParseError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	tmpToken := createTempToken(t, "test-token")
-	defer os.Remove(tmpToken)
+	client := NewClient(server.URL, nil)
 
-	client := NewClient(ClientConfig{
-		BaseURL:   server.URL,
-		TokenPath: tmpToken,
-	})
-
-	_, err := client.ListPods(context.Background(), "")
+	_, err := client.ListPods(context.Background(), "", false)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse response")
 }
@@ -212,15 +181,9 @@ func TestClient_ParseErrorResponse_Malformed(t *testing.T) {
 	}))
 	defer server.Close()
 
-	tmpToken := createTempToken(t, "test-token")
-	defer os.Remove(tmpToken)
+	client := NewClient(server.URL, nil)
 
-	client := NewClient(ClientConfig{
-		BaseURL:   server.URL,
-		TokenPath: tmpToken,
-	})
-
-	_, err := client.ListPods(context.Background(), "")
+	_, err := client.ListPods(context.Background(), "", false)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "HTTP 400")
 }
@@ -244,10 +207,8 @@ func TestClient_WhoAmI(t *testing.T) {
 	tmpToken := createTempToken(t, "test-token")
 	defer os.Remove(tmpToken)
 
-	client := NewClient(ClientConfig{
-		BaseURL:   server.URL,
-		TokenPath: tmpToken,
-	})
+	authProvider := auth.NewK8sSAProvider(nil, "", "", tmpToken)
+	client := NewClient(server.URL, authProvider)
 
 	whoami, err := client.WhoAmI(context.Background())
 	assert.NoError(t, err)

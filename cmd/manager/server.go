@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/nauticalab/devenv-engine/internal/api"
 	"github.com/nauticalab/devenv-engine/internal/k8s"
+	"github.com/nauticalab/devenv-engine/internal/manager/api"
 	"github.com/spf13/cobra"
 )
 

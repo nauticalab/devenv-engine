@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 )
 
 const (
@@ -20,14 +19,6 @@ const (
 func Middleware(providers map[string]AuthProvider) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Extract token from Authorization header
-			token, err := extractBearerToken(r)
-			if err != nil {
-				log.Printf("Auth failed: %v", err)
-				http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
-				return
-			}
-
 			// Get requested auth type from header, default to k8s-sa
 			authType := r.Header.Get(AuthTypeHeader)
 			if authType == "" {
@@ -43,7 +34,7 @@ func Middleware(providers map[string]AuthProvider) func(http.Handler) http.Handl
 			}
 
 			// Authenticate using the provider
-			identity, err := provider.Authenticate(r.Context(), token)
+			identity, err := provider.Authenticate(r.Context(), r)
 			if err != nil {
 				log.Printf("Auth failed with %s provider: %v", authType, err)
 				http.Error(w, "Unauthorized: authentication failed", http.StatusUnauthorized)
@@ -60,31 +51,6 @@ func Middleware(providers map[string]AuthProvider) func(http.Handler) http.Handl
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-}
-
-// extractBearerToken extracts the bearer token from the Authorization header
-// Expected format: "Authorization: Bearer <token>"
-func extractBearerToken(r *http.Request) (string, error) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return "", fmt.Errorf("missing Authorization header")
-	}
-
-	parts := strings.SplitN(authHeader, " ", 2)
-	if len(parts) != 2 {
-		return "", fmt.Errorf("invalid Authorization header format")
-	}
-
-	if strings.ToLower(parts[0]) != "bearer" {
-		return "", fmt.Errorf("authorization scheme must be Bearer")
-	}
-
-	token := strings.TrimSpace(parts[1])
-	if token == "" {
-		return "", fmt.Errorf("empty bearer token")
-	}
-
-	return token, nil
 }
 
 // RequireAuthentication is a helper that returns 401 if no identity in context

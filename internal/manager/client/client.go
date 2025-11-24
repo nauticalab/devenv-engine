@@ -1,6 +1,6 @@
-// Package manager provides a client for interacting with the DevENV Manager API.
+// Package client provides a client for interacting with the DevENV Manager API.
 // It handles authentication, request execution, and response parsing.
-package manager
+package client
 
 import (
 	"bytes"
@@ -9,16 +9,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
+	"strings"
 	"time"
 
-	"github.com/nauticalab/devenv-engine/internal/api"
+	"github.com/nauticalab/devenv-engine/internal/manager/api"
+	"github.com/nauticalab/devenv-engine/internal/manager/auth"
 )
 
 const (
-	// DefaultTokenPath is the default path for the projected service account token
-	DefaultTokenPath = "/var/run/secrets/tokens/devenv-manager"
-
 	// DefaultTimeout is the default HTTP client timeout
 	DefaultTimeout = 30 * time.Second
 )
@@ -29,63 +27,23 @@ type Client struct {
 	baseURL string
 	// httpClient is the underlying HTTP client
 	httpClient *http.Client
-	// tokenPath is the file path to the service account token
-	tokenPath string
-	// authType is the authentication type to use (e.g., "k8s-sa")
-	authType string
-}
-
-// ClientConfig holds configuration for the manager client
-type ClientConfig struct {
-	// BaseURL is the base URL of the manager API
-	BaseURL string
-	// TokenPath is the file path to the service account token
-	TokenPath string
-	// Timeout is the request timeout
-	Timeout time.Duration
-	// AuthType is the authentication type to use
-	AuthType string
+	// authProvider is the authentication provider
+	authProvider auth.AuthProvider
 }
 
 // NewClient creates a new manager API client
-func NewClient(config ClientConfig) *Client {
-	if config.TokenPath == "" {
-		config.TokenPath = DefaultTokenPath
-	}
-	if config.Timeout == 0 {
-		config.Timeout = DefaultTimeout
-	}
-	if config.AuthType == "" {
-		config.AuthType = "k8s-sa"
-	}
-
+func NewClient(baseURL string, authProvider auth.AuthProvider) *Client {
 	return &Client{
-		baseURL: config.BaseURL,
+		baseURL: baseURL,
 		httpClient: &http.Client{
-			Timeout: config.Timeout,
+			Timeout: DefaultTimeout,
 		},
-		tokenPath: config.TokenPath,
-		authType:  config.AuthType,
+		authProvider: authProvider,
 	}
-}
-
-// readToken reads the service account token from the mounted volume
-func (c *Client) readToken() (string, error) {
-	tokenBytes, err := os.ReadFile(c.tokenPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read token from %s: %w", c.tokenPath, err)
-	}
-	return string(tokenBytes), nil
 }
 
 // doRequest performs an HTTP request with authentication
-func (c *Client) doRequest(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
-	// Read the service account token
-	token, err := c.readToken()
-	if err != nil {
-		return nil, err
-	}
-
+func (c *Client) doRequest(ctx context.Context, method, path string, body any) (*http.Response, error) {
 	// Prepare request body
 	var reqBody io.Reader
 	if body != nil {
@@ -103,9 +61,14 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
+	// Inject authentication
+	if c.authProvider != nil {
+		if err := c.authProvider.InjectAuth(ctx, req); err != nil {
+			return nil, fmt.Errorf("failed to inject authentication: %w", err)
+		}
+	}
+
 	// Add headers
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("X-Auth-Type", c.authType)
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
@@ -120,7 +83,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 }
 
 // parseResponse parses the HTTP response into the target structure
-func parseResponse(resp *http.Response, target interface{}) error {
+func parseResponse(resp *http.Response, target any) error {
 	defer resp.Body.Close()
 
 	// Read response body
@@ -194,10 +157,19 @@ func (c *Client) WhoAmI(ctx context.Context) (*api.WhoAmIResponse, error) {
 }
 
 // ListPods retrieves the list of pods for the authenticated developer
-func (c *Client) ListPods(ctx context.Context, namespace string) (*api.ListPodsResponse, error) {
+func (c *Client) ListPods(ctx context.Context, namespace string, allNamespaces bool) (*api.ListPodsResponse, error) {
 	path := "/api/v1/pods"
+	queryParams := []string{}
+
 	if namespace != "" {
-		path = fmt.Sprintf("%s?namespace=%s", path, namespace)
+		queryParams = append(queryParams, fmt.Sprintf("namespace=%s", namespace))
+	}
+	if allNamespaces {
+		queryParams = append(queryParams, "all_namespaces=true")
+	}
+
+	if len(queryParams) > 0 {
+		path = fmt.Sprintf("%s?%s", path, strings.Join(queryParams, "&"))
 	}
 
 	resp, err := c.doRequest(ctx, http.MethodGet, path, nil)

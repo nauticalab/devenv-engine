@@ -10,8 +10,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
-	"github.com/nauticalab/devenv-engine/internal/auth"
 	"github.com/nauticalab/devenv-engine/internal/k8s"
+	"github.com/nauticalab/devenv-engine/internal/manager/auth"
 )
 
 // Server represents the HTTP API server
@@ -55,7 +55,7 @@ type ServerConfig struct {
 // NewServer creates a new API server with the given configuration
 func NewServer(config ServerConfig) (*Server, error) {
 	// Create K8s SA auth provider
-	k8sProvider := auth.NewK8sSAProvider(config.K8sClient, config.Audience, "devenv-{developer}")
+	k8sProvider := auth.NewK8sSAProvider(config.K8sClient, config.Audience, "devenv-{developer}", "")
 
 	// Build provider map
 	providers := map[string]auth.AuthProvider{

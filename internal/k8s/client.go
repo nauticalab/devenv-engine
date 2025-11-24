@@ -25,12 +25,8 @@ func NewClientWithInterface(clientset kubernetes.Interface) *Client {
 }
 
 // ListPods lists all pods in the specified namespace.
-// If namespace is empty, it defaults to "default".
+// If namespace is empty, it lists pods across all namespaces.
 func (c *Client) ListPods(ctx context.Context, namespace string) (*corev1.PodList, error) {
-	if namespace == "" {
-		namespace = "default"
-	}
-
 	pods, err := c.clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pods in namespace %s: %w", namespace, err)
@@ -40,13 +36,9 @@ func (c *Client) ListPods(ctx context.Context, namespace string) (*corev1.PodLis
 }
 
 // ListPodsWithLabels lists pods in the specified namespace matching the given label selector.
-// If namespace is empty, it defaults to "default".
+// If namespace is empty, it lists pods across all namespaces.
 // Example labelSelector: "app=devenv,developer=eywalker"
 func (c *Client) ListPodsWithLabels(ctx context.Context, namespace, labelSelector string) (*corev1.PodList, error) {
-	if namespace == "" {
-		namespace = "default"
-	}
-
 	pods, err := c.clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})

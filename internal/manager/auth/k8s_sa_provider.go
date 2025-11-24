@@ -3,39 +3,76 @@ package auth
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
 
 	"github.com/nauticalab/devenv-engine/internal/k8s"
 	authv1 "k8s.io/api/authentication/v1"
 )
 
+const (
+	// DefaultTokenPath is the default path for the projected service account token
+	DefaultTokenPath = "/var/run/secrets/tokens/devenv-manager"
+)
+
 // K8sSAProvider implements authentication via Kubernetes service account tokens
 type K8sSAProvider struct {
-	// client is the Kubernetes client used for TokenReview
+	// client is the Kubernetes client used for TokenReview (server-side)
 	client *k8s.Client
 	// audience is the expected audience for tokens (e.g., "devenv-manager")
 	audience string
 	// namePattern is the pattern to extract developer name (e.g., "devenv-{developer}")
 	namePattern string
+	// tokenPath is the path to the service account token (client-side)
+	tokenPath string
 }
 
 // NewK8sSAProvider creates a new Kubernetes service account authentication provider
-func NewK8sSAProvider(client *k8s.Client, audience, namePattern string) *K8sSAProvider {
+func NewK8sSAProvider(client *k8s.Client, audience, namePattern, tokenPath string) *K8sSAProvider {
 	if namePattern == "" {
 		namePattern = "devenv-{developer}"
 	}
 	if audience == "" {
 		audience = "devenv-manager"
 	}
+	if tokenPath == "" {
+		tokenPath = DefaultTokenPath
+	}
 
 	return &K8sSAProvider{
 		client:      client,
 		audience:    audience,
 		namePattern: namePattern,
+		tokenPath:   tokenPath,
 	}
 }
 
+// InjectAuth reads the token from the file and adds it to the Authorization header.
+func (p *K8sSAProvider) InjectAuth(ctx context.Context, req *http.Request) error {
+	tokenBytes, err := os.ReadFile(p.tokenPath)
+	if err != nil {
+		return fmt.Errorf("failed to read token from %s: %w", p.tokenPath, err)
+	}
+	token := string(tokenBytes)
+
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("X-Auth-Type", p.Type())
+	return nil
+}
+
 // Authenticate validates a Kubernetes service account token using TokenReview API
-func (p *K8sSAProvider) Authenticate(ctx context.Context, token string) (*Identity, error) {
+func (p *K8sSAProvider) Authenticate(ctx context.Context, req *http.Request) (*Identity, error) {
+	// Extract token from Authorization header
+	authHeader := req.Header.Get("Authorization")
+	if authHeader == "" {
+		return nil, NewAuthError(p.Type(), "missing authorization header", nil)
+	}
+
+	if len(authHeader) < 7 || authHeader[:7] != "Bearer " {
+		return nil, NewAuthError(p.Type(), "invalid authorization header format", nil)
+	}
+
+	token := authHeader[7:]
 	if token == "" {
 		return nil, NewAuthError(p.Type(), "empty token", nil)
 	}

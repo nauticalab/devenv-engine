@@ -1,13 +1,20 @@
 package auth
 
-import "context"
+import (
+	"context"
+	"net/http"
+)
 
 // AuthProvider defines the interface for authentication providers
 // Different providers (K8s SA, GitHub, OIDC) implement this interface
 type AuthProvider interface {
-	// Authenticate validates the provided token and returns an Identity.
-	// It returns an error if the token is invalid, expired, or authentication fails.
-	Authenticate(ctx context.Context, token string) (*Identity, error)
+	// Authenticate validates the request and returns an Identity.
+	// It returns an error if authentication fails.
+	Authenticate(ctx context.Context, req *http.Request) (*Identity, error)
+
+	// InjectAuth adds authentication information (e.g., headers) to the request.
+	// This is used by the client to inject credentials.
+	InjectAuth(ctx context.Context, req *http.Request) error
 
 	// Name returns a human-readable name for the provider (e.g., "Kubernetes Service Account")
 	Name() string
