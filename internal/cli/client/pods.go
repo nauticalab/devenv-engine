@@ -6,7 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/nauticalab/devenv-engine/internal/config"
+	"github.com/nauticalab/devenv-engine/internal/cli"
 	"github.com/nauticalab/devenv-engine/internal/manager/api"
 	"github.com/nauticalab/devenv-engine/internal/manager/auth"
 	"github.com/nauticalab/devenv-engine/internal/manager/client"
@@ -95,9 +95,9 @@ func printPodsTable(pods []api.Pod) {
 }
 
 // LoadConfig loads the CLI configuration and applies overrides
-func LoadConfig(managerURLOverride string) (*config.CLIConfig, error) {
+func LoadConfig(managerURLOverride string) (*cli.CLIConfig, error) {
 	// Load configuration
-	cfg, err := config.LoadCLIConfig()
+	cfg, err := cli.LoadCLIConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
