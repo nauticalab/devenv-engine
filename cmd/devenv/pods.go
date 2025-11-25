@@ -119,7 +119,7 @@ func runPodsList(ctx context.Context, args []string) error {
 	// Create manager client
 	// For now, we use K8s SA provider with default token path
 	// In the future, we might support other auth methods
-	authProvider := auth.NewK8sSAProvider(nil, "", "", "")
+	authProvider := auth.NewK8sSAProvider(nil, "", "", config.SATokenPath)
 	c := client.NewClient(config.ManagerURL, authProvider)
 
 	// List pods
@@ -166,7 +166,7 @@ func runPodsDelete(ctx context.Context, podName string) error {
 	}
 
 	// Create manager client
-	authProvider := auth.NewK8sSAProvider(nil, "", "", "")
+	authProvider := auth.NewK8sSAProvider(nil, "", "", config.SATokenPath)
 	c := client.NewClient(config.ManagerURL, authProvider)
 
 	// Delete pod

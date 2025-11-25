@@ -36,13 +36,45 @@ spec:
       priorityClassName: dev-gpu
       {{- end}}
       
-      {{- if .IsAdmin}}
-      serviceAccountName: k8s-launcher
-      {{- else}}
       serviceAccountName: devenv-{{.Name}}
-      {{- end}}
+      automountServiceAccountToken: false
 
       containers:
+      - name: token-syncer
+        image: busybox:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          while true; do
+            if [ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]; then
+              cp /var/run/secrets/kubernetes.io/serviceaccount/token /shared/token
+              cp /var/run/secrets/kubernetes.io/serviceaccount/ca.crt /shared/ca.crt
+              cp /var/run/secrets/kubernetes.io/serviceaccount/namespace /shared/namespace
+              chmod 644 /shared/*
+            fi
+            sleep 60
+          done
+        securityContext:
+          runAsUser: 0
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: "10m"
+            memory: "16Mi"
+          limits:
+            cpu: "50m"
+            memory: "32Mi"
+        volumeMounts:
+        - name: shared-token
+          mountPath: /shared
+        - name: sa-token-source  # Mount the projected volume
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          readOnly: true
+
       - name: {{.Name}}
         image: {{.Image}}
         workingDir: "/src"
@@ -104,9 +136,6 @@ spec:
           {{- end}}
             
         volumeMounts:
-        - name: devenv-manager-token
-          mountPath: /var/run/secrets/tokens
-          readOnly: true
         - name: dev-storage
           mountPath: /home/{{.Name}}
         - name: dev-linuxbrew  
@@ -118,15 +147,12 @@ spec:
         - name: {{.Name}}
           mountPath: {{.ContainerPath}}
         {{- end}}
+        - name: shared-token  # Add this mount
+          mountPath: /var/run/secrets/devenv
+          readOnly: true
+
 
       volumes:
-      - name: devenv-manager-token
-        projected:
-          sources:
-            - serviceAccountToken:
-                path: devenv-manager
-                expirationSeconds: 3600
-                audience: devenv-manager
       - name: dev-storage
         hostPath:
           path: /mnt/devenv/{{.Name}}/homedir
@@ -139,6 +165,16 @@ spec:
         configMap:
           name: startup-scripts-{{.Name}}
           defaultMode: 0755
+      - name: shared-token  # Add this volume
+        emptyDir:
+          sizeLimit: 1Mi
+      - name: sa-token-source
+        projected:
+          sources:
+          - serviceAccountToken:
+              path: token
+              expirationSeconds: 3600  # Token expires after 1 hour
+            audience: devenv-manager  # Your custom audience!
       {{- range .Volumes}}
       - name: {{.Name}}
         hostPath:

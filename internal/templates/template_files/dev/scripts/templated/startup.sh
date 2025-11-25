@@ -6,10 +6,10 @@ set -e
 TARGET_UID={{.GetUserID}}
 TARGET_GID={{.GetUserID}}
 DEV_USERNAME="{{.Name}}"
+SA_TOKEN_PATH="/var/run/secrets/devenv/token"
 
 # Path configuration
 PYTHON_BIN_PATH="{{.PythonBinPath}}"
-PYTHON_PATH="${PYTHON_BIN_PATH}/python3"
 ENV_INIT_SCRIPT="/home/${DEV_USERNAME}/.devenv_init.sh"
 ENV_BASH_SCRIPT="/home/${DEV_USERNAME}/.devenv_bash.sh"
 
@@ -18,7 +18,7 @@ echo "Starting container setup for user: ${DEV_USERNAME} (UID: ${TARGET_UID})"
 # === SYSTEM PACKAGE INSTALLATION ===
 echo "Installing core system packages..."
 apt-get update
-apt-get install -y sudo openssh-server
+apt-get install -y sudo openssh-server python3 python3-pip
 
 # Install Homebrew dependencies if Homebrew will be installed
 {{- if .InstallHomebrew}}
@@ -46,7 +46,7 @@ if id -u ${TARGET_UID} &>/dev/null; then
     usermod -l ${DEV_USERNAME} -s /bin/bash -d /home/${DEV_USERNAME} -g ${TARGET_GID} $(id -un ${TARGET_UID})
 else
     echo "Adding user ${DEV_USERNAME} with UID ${TARGET_UID}"
-    useradd -u ${TARGET_UID} -m -s /bin/bash ${DEV_USERNAME}
+    useradd -u ${TARGET_UID} -g ${TARGET_GID} -m -s /bin/bash ${DEV_USERNAME}
 fi
 
 # Ensure home directory exists and has correct ownership
@@ -137,12 +137,12 @@ rm -rf /home/${DEV_USERNAME}/.local/lib/python*/site-packages/*
 # Install common python packages from requirements.txt
 if [ -f /scripts/requirements.txt ]; then
     echo "Installing Python packages from requirements.txt"
-    /bin/bash /scripts/run_with_git.sh ${DEV_USERNAME} ${PYTHON_PATH} -m pip install --no-user --no-cache-dir -r /scripts/requirements.txt
+    /bin/bash /scripts/run_with_git.sh ${DEV_USERNAME} ${PYTHON_BIN_PATH} -m pip install --user --no-cache-dir -r /scripts/requirements.txt
 fi
 
 {{- if gt (len .Packages.Python) 0}}
 echo "Installing Python packages: {{range $i, $pkg := .Packages.Python}}{{if gt $i 0}} {{end}}{{$pkg}}{{end}}"
-/bin/bash /scripts/run_with_git.sh ${DEV_USERNAME} ${PYTHON_PATH} -m pip install --no-user --no-cache-dir{{range .Packages.Python}} {{.}}{{end}}
+/bin/bash /scripts/run_with_git.sh ${DEV_USERNAME} ${PYTHON_BIN_PATH} -m pip install --no-user --no-cache-dir{{range .Packages.Python}} {{.}}{{end}}
 {{- end}}
 
 {{- if gt (len .Packages.Brew) 0}}

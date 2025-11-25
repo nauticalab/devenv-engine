@@ -10,7 +10,8 @@ import (
 
 // CLIConfig represents the configuration for the CLI
 type CLIConfig struct {
-	ManagerURL string `yaml:"managerURL"`
+	ManagerURL  string `yaml:"managerURL"`
+	SATokenPath string `yaml:"saTokenPath"`
 }
 
 // LoadCLIConfig loads configuration from multiple sources in order of precedence:

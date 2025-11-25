@@ -12,7 +12,8 @@ import (
 
 const (
 	// DefaultTokenPath is the default path for the projected service account token
-	DefaultTokenPath = "/var/run/secrets/tokens/devenv-manager"
+	// 	DefaultTokenPath = "/var/run/secrets/tokens/devenv-manager"
+	DefaultTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 )
 
 // K8sSAProvider implements authentication via Kubernetes service account tokens
