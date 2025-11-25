@@ -1,14 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 
-	"github.com/nauticalab/devenv-engine/internal/manager/api"
-	"github.com/nauticalab/devenv-engine/internal/manager/auth"
-	"github.com/nauticalab/devenv-engine/internal/manager/client"
+	clientcmd "github.com/nauticalab/devenv-engine/internal/cli/client"
 	"github.com/spf13/cobra"
 )
 
@@ -51,8 +47,22 @@ Examples:
   devenv pods list --show-all=false`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := context.Background()
-		if err := runPodsList(ctx, args); err != nil {
+		cfg, err := clientcmd.LoadConfig(podsManagerURL)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		opts := clientcmd.PodsOptions{
+			Namespace:     podsNamespace,
+			AllNamespaces: podsAllNamespace,
+			LabelFilter:   podsLabelFilter,
+			ShowAll:       podsShowAll,
+			ManagerURL:    cfg.ManagerURL,
+			SATokenPath:   cfg.SATokenPath,
+		}
+
+		if err := clientcmd.RunListPods(args, opts); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
@@ -72,9 +82,20 @@ Examples:
   devenv pods delete my-pod --namespace devenv`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := context.Background()
+		cfg, err := clientcmd.LoadConfig(podsManagerURL)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		opts := clientcmd.PodsOptions{
+			Namespace:   podsNamespace,
+			ManagerURL:  cfg.ManagerURL,
+			SATokenPath: cfg.SATokenPath,
+		}
+
 		podName := args[0]
-		if err := runPodsDelete(ctx, podName); err != nil {
+		if err := clientcmd.RunDeletePod(podName, opts); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
@@ -98,106 +119,4 @@ func init() {
 	// Add subcommands
 	podsCmd.AddCommand(podsListCmd)
 	podsCmd.AddCommand(podsDeleteCmd)
-}
-
-func runPodsList(ctx context.Context, args []string) error {
-	// Load configuration
-	config, err := LoadCLIConfig()
-	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
-	}
-
-	// Override with flag if provided
-	if podsManagerURL != "" {
-		config.ManagerURL = podsManagerURL
-	}
-
-	if config.ManagerURL == "" {
-		return fmt.Errorf("manager URL is required. Set DEVEN_MANAGER_URL env var, use --manager-url flag, or configure in ~/.devenv/config.yaml")
-	}
-
-	// Create manager client
-	// For now, we use K8s SA provider with default token path
-	// In the future, we might support other auth methods
-	authProvider := auth.NewK8sSAProvider(nil, "", "", config.SATokenPath)
-	c := client.NewClient(config.ManagerURL, authProvider)
-
-	// List pods
-	resp, err := c.ListPods(ctx, podsNamespace, podsAllNamespace)
-	if err != nil {
-		return fmt.Errorf("failed to list pods: %w", err)
-	}
-
-	// Filter pods locally if needed (e.g. by developer name if arg provided)
-	// The API currently filters by authenticated developer, but we might want to filter further
-	// or if we are admin listing all pods.
-	// For now, let's just print what we got.
-
-	var filteredPods []api.Pod
-	for _, pod := range resp.Pods {
-		if podsShowAll || pod.Status == "Running" {
-			filteredPods = append(filteredPods, pod)
-		}
-	}
-
-	if len(filteredPods) == 0 {
-		fmt.Println("No pods found")
-		return nil
-	}
-
-	printPodsTable(filteredPods)
-	return nil
-}
-
-func runPodsDelete(ctx context.Context, podName string) error {
-	// Load configuration
-	config, err := LoadCLIConfig()
-	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
-	}
-
-	// Override with flag if provided
-	if podsManagerURL != "" {
-		config.ManagerURL = podsManagerURL
-	}
-
-	if config.ManagerURL == "" {
-		return fmt.Errorf("manager URL is required. Set DEVEN_MANAGER_URL env var, use --manager-url flag, or configure in ~/.devenv/config.yaml")
-	}
-
-	// Create manager client
-	authProvider := auth.NewK8sSAProvider(nil, "", "", config.SATokenPath)
-	c := client.NewClient(config.ManagerURL, authProvider)
-
-	// Delete pod
-	resp, err := c.DeletePod(ctx, podsNamespace, podName)
-	if err != nil {
-		return fmt.Errorf("failed to delete pod: %w", err)
-	}
-
-	if resp.Success {
-		fmt.Printf("✓ Pod '%s' deleted from namespace '%s'\n", podName, podsNamespace)
-	} else {
-		return fmt.Errorf("failed to delete pod: %s", resp.Message)
-	}
-	return nil
-}
-
-// printPodsTable prints pods from manager API response
-func printPodsTable(pods []api.Pod) {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	defer w.Flush()
-
-	// Print header
-	fmt.Fprintln(w, "NAMESPACE\tNAME\tSTATUS\tRESTARTS\tAGE\tDEVELOPER")
-
-	// Print each pod
-	for _, pod := range pods {
-		developer := pod.Developer
-		if developer == "" {
-			developer = "-"
-		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s\n",
-			pod.Namespace, pod.Name, pod.Status, pod.Restarts, pod.Age, developer)
-	}
 }
