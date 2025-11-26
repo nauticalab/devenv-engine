@@ -26,10 +26,11 @@ type ProcessingResult struct {
 
 // Options holds configuration for the generate command
 type GenerateOptions struct {
-	OutputDir string
-	ConfigDir string
-	DryRun    bool
-	Verbose   bool
+	OutputDir           string
+	ConfigDir           string
+	DryRun              bool
+	SkipSystemManifests bool
+	Verbose             bool
 }
 
 // RunAll generates manifests for all developers
@@ -46,7 +47,7 @@ func GenerateRunAll(opts GenerateOptions) {
 	}
 
 	// Step 2: Generate system manifests once
-	if !opts.DryRun {
+	if !opts.DryRun && !opts.SkipSystemManifests {
 		if err := generateSystemManifests(globalConfig, opts.OutputDir); err != nil {
 			fmt.Fprintf(os.Stderr, "Error generating system manifests: %v\n", err)
 			os.Exit(1)
@@ -135,9 +136,11 @@ func GenerateRunSingle(developerName string, opts GenerateOptions) {
 		os.Exit(1)
 	}
 
-	if err := generateSystemManifests(globalConfig, opts.OutputDir); err != nil {
-		fmt.Fprintf(os.Stderr, "Error generating system manifests: %v\n", err)
-		os.Exit(1)
+	if !opts.DryRun && !opts.SkipSystemManifests {
+		if err := generateSystemManifests(globalConfig, opts.OutputDir); err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating system manifests: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	cfg, err := config.LoadDeveloperConfigWithBaseConfig(opts.ConfigDir, developerName, globalConfig)

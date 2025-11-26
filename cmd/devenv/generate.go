@@ -10,10 +10,11 @@ import (
 
 var (
 	// Command-specific flags for generate
-	outputDir string
-	configDir string // Input directory for developer configs
-	dryRun    bool
-	allDevs   bool
+	outputDir           string
+	configDir           string // Input directory for developer configs
+	dryRun              bool
+	allDevs             bool
+	skipSystemManifests bool
 )
 
 var generateCmd = &cobra.Command{
@@ -39,10 +40,10 @@ Examples:
 		}
 
 		opts := cli.GenerateOptions{
-			OutputDir: outputDir,
-			ConfigDir: configDir,
-			DryRun:    dryRun,
-			Verbose:   verbose,
+			OutputDir:           outputDir,
+			ConfigDir:           configDir,
+			DryRun:              dryRun,
+			SkipSystemManifests: skipSystemManifests,
 		}
 
 		// Execute the logic
@@ -62,5 +63,6 @@ func init() {
 	generateCmd.Flags().StringVar(&configDir, "config-dir", "./developers", "Directory containing developer configuration files")
 	generateCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be generated without creating files")
 	generateCmd.Flags().BoolVar(&allDevs, "all-developers", false, "Generate manifests for all developers")
+	generateCmd.Flags().BoolVar(&skipSystemManifests, "no-system-manifests", false, "Skip generating system manifests")
 
 }
