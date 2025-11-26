@@ -103,8 +103,6 @@ Examples:
 }
 
 func init() {
-	// Add pods command to root
-	rootCmd.AddCommand(podsCmd)
 
 	// Add pods command flags
 	podsListCmd.Flags().StringVarP(&podsNamespace, "namespace", "n", "", "Kubernetes namespace (default: default)")

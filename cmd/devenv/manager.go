@@ -87,7 +87,7 @@ type ManagerServerConfig struct {
 var mgrServerConfig ManagerServerConfig
 
 var managerServerCmd = &cobra.Command{
-	Use:   "serve",
+	Use:   "start",
 	Short: "Start the DevENV Manager HTTP API server",
 	Long: `Start the DevENV Manager HTTP API server.
 
@@ -102,9 +102,6 @@ Clients must provide a Bearer token in the Authorization header.`,
 }
 
 func init() {
-	// Add manager command to root
-	rootCmd.AddCommand(managerCmd)
-
 	// --- Pods Command Init ---
 	managerPodsListCmd.Flags().StringVarP(&mgrPodsNamespace, "namespace", "n", "default", "Kubernetes namespace")
 	managerPodsListCmd.Flags().BoolVarP(&mgrPodsAllNamespace, "all-namespaces", "A", false, "List pods across all namespaces")

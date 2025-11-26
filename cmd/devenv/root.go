@@ -24,8 +24,10 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 
 	// Add subcommands to root
-	rootCmd.AddCommand(generateCmd)
-	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(validateCmd)
 	rootCmd.AddCommand(authCmd)
+	rootCmd.AddCommand(generateCmd)
+	rootCmd.AddCommand(managerCmd)
+	rootCmd.AddCommand(podsCmd)
+	rootCmd.AddCommand(validateCmd)
+	rootCmd.AddCommand(versionCmd)
 }
