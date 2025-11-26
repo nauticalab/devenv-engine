@@ -63,6 +63,6 @@ func init() {
 	generateCmd.Flags().StringVar(&configDir, "config-dir", "./developers", "Directory containing developer configuration files")
 	generateCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be generated without creating files")
 	generateCmd.Flags().BoolVar(&allDevs, "all-developers", false, "Generate manifests for all developers")
-	generateCmd.Flags().BoolVar(&skipSystemManifests, "no-system-manifests", false, "Skip generating system manifests")
+	generateCmd.Flags().BoolVar(&skipSystemManifests, "skip-system-manifests", false, "Skip generating system manifests")
 
 }
