@@ -1,4 +1,4 @@
-# Welcome to DevENV Engine
+# Welcome to DevEnv Engine
 
 A Go-based tool for managing developer environments in Kubernetes.
 
