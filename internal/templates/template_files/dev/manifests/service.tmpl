@@ -1,6 +1,24 @@
 apiVersion: v1
 kind: Service
 metadata:
+  name: devenv-{{.Name}}
+  namespace: {{.Namespace}}
+  labels:
+    app: devenv-{{.Name}}
+    service: governing
+spec:
+  clusterIP: None
+  selector:
+    app: devenv-{{.Name}}
+  ports:
+  - name: ssh
+    port: 22
+    targetPort: 22
+    protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: devenv-ssh-{{.Name}}
   namespace: {{.Namespace}}
   labels:

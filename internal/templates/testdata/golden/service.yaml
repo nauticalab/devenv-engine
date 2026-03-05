@@ -1,6 +1,24 @@
 apiVersion: v1
 kind: Service
 metadata:
+  name: devenv-testuser
+  namespace: devenv-test
+  labels:
+    app: devenv-testuser
+    service: governing
+spec:
+  clusterIP: None
+  selector:
+    app: devenv-testuser
+  ports:
+  - name: ssh
+    port: 22
+    targetPort: 22
+    protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: devenv-ssh-testuser
   namespace: devenv-test
   labels:
