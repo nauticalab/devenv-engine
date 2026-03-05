@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: env-vars-{{.Name}}
+  namespace: {{.Namespace}}
   labels:
     app: devenv-{{.Name}}
 data:

@@ -26,6 +26,7 @@ func TestRenderTemplate(t *testing.T) {
 			},
 			UID:   2000,
 			Image: "ubuntu:22.04",
+			Namespace: "devenv-test",
 			Packages: config.PackageConfig{
 				Python: []string{"numpy", "pandas"},
 				APT:    []string{"vim", "curl"},
@@ -57,7 +58,7 @@ func TestRenderTemplate(t *testing.T) {
 		},
 	}
 
-	templates := []string{"statefulset", "service", "env-vars", "startup-scripts"}
+	templates := []string{"statefulset", "service", "env-vars", "startup-scripts", "ingress"}
 
 	for _, templateName := range templates {
 		t.Run(templateName, func(t *testing.T) {
@@ -109,6 +110,7 @@ func TestRenderAll(t *testing.T) {
 		Name: "minimal",
 		BaseConfig: config.BaseConfig{
 			SSHPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... minimal@example.com",
+			Namespace:   "devenv-test",
 		},
 		SSHPort: 30002,
 	}
@@ -121,7 +123,7 @@ func TestRenderAll(t *testing.T) {
 	require.NoError(t, err, "RenderAll should not return error")
 
 	// Verify all expected files were created
-	expectedFiles := []string{"statefulset.yaml", "service.yaml", "env-vars.yaml", "startup-scripts.yaml"}
+	expectedFiles := []string{"statefulset.yaml", "service.yaml", "env-vars.yaml", "startup-scripts.yaml", "ingress.yaml"}
 
 	for _, filename := range expectedFiles {
 		filePath := filepath.Join(tempDir, filename)

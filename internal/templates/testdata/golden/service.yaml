@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: devenv-ssh-testuser
+  namespace: devenv-test
   labels:
     app: devenv-testuser
     service: ssh
@@ -20,6 +21,7 @@ apiVersion: v1
 kind: Service  
 metadata:
   name: devenv-http-testuser
+  namespace: devenv-test
   labels:
     app: devenv-testuser
     service: http
