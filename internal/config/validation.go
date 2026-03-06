@@ -57,6 +57,9 @@ func init() {
 	if err := validate.RegisterValidation("k8s_memory", validateKubernetesMemory); err != nil {
 		panic(fmt.Errorf("register validator k8s_memory: %w", err))
 	}
+	if err := validate.RegisterValidation("mount_path", validateMountPath); err != nil {
+		panic(fmt.Errorf("register validator mount_path: %w", err))
+	}
 	validate.RegisterStructValidation(validateGitRepo, GitRepo{})
 }
 
@@ -188,6 +191,33 @@ func validateKubernetesMemory(fl validator.FieldLevel) bool {
 	}
 }
 
+// validateMountPath implements the "mount_path" tag.
+// It validates mount paths using syntax only (no filesystem checks).
+func validateMountPath(fl validator.FieldLevel) bool {
+	p, ok := fl.Field().Interface().(string)
+	if !ok {
+		return false
+	}
+
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return false
+	}
+
+	// Kubernetes-style mount paths are absolute, slash-separated paths.
+	if !path.IsAbs(p) {
+		return false
+	}
+
+	// Reject NUL bytes; otherwise rely on lexical cleaning only.
+	if strings.ContainsRune(p, '\x00') {
+		return false
+	}
+
+	clean := path.Clean(p)
+	return clean != "" && clean != "."
+}
+
 // ValidateDevEnvConfig runs tag-based validation and then applies
 // additional semantic checks that are easier to express in code.
 func ValidateDevEnvConfig(config *DevEnvConfig) error {
@@ -282,6 +312,8 @@ func formatFieldError(fieldError validator.FieldError) string {
 		return fmt.Sprintf("'%s' must be a valid URL, got '%v'", fieldName, value)
 	case "filepath":
 		return fmt.Sprintf("'%s' must be a valid file path, got '%v'", fieldName, value)
+	case "mount_path":
+		return fmt.Sprintf("'%s' must be a valid absolute mount path, got '%v'", fieldName, value)
 	case "cron":
 		return fmt.Sprintf("'%s' must be a valid cron expression, got '%v'", fieldName, value)
 

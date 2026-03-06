@@ -279,3 +279,71 @@ func TestValidateDevEnvConfig_PythonBinPathMustBeAbsolute(t *testing.T) {
 	assert.Contains(t, err.Error(), "pythonBinPath")
 	assert.Contains(t, err.Error(), "absolute path")
 }
+
+func TestValidator_MountPath(t *testing.T) {
+	type S struct {
+		Path string `validate:"mount_path"`
+	}
+
+	cases := []struct {
+		name string
+		val  string
+		ok   bool
+	}{
+		{name: "root mount dir", val: "/mnt", ok: true},
+		{name: "mount subpath", val: "/mnt/data", ok: true},
+		{name: "root", val: "/", ok: true},
+		{name: "empty", val: "", ok: false},
+		{name: "whitespace", val: "   ", ok: false},
+		{name: "relative path", val: "mnt/data", ok: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validate.Struct(&S{Path: tc.val})
+			if tc.ok {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateDevEnvConfig_VolumeMountPaths(t *testing.T) {
+	newCfg := func(localPath, containerPath string) *DevEnvConfig {
+		return &DevEnvConfig{
+			Name: "alice",
+			BaseConfig: BaseConfig{
+				SSHPublicKey: "ssh-ed25519 AAAAB3NzaC1lZDI1NTE5AAAA user@host",
+				Volumes: []VolumeMount{
+					{
+						Name:          "mnt",
+						LocalPath:     localPath,
+						ContainerPath: containerPath,
+					},
+				},
+			},
+		}
+	}
+
+	t.Run("accepts root directory mounts", func(t *testing.T) {
+		require.NoError(t, ValidateDevEnvConfig(newCfg("/mnt", "/mnt")))
+	})
+
+	t.Run("accepts mount subpaths", func(t *testing.T) {
+		require.NoError(t, ValidateDevEnvConfig(newCfg("/mnt/data", "/mnt/data")))
+	})
+
+	t.Run("rejects empty localPath", func(t *testing.T) {
+		err := ValidateDevEnvConfig(newCfg("", "/mnt"))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "LocalPath")
+	})
+
+	t.Run("rejects empty containerPath", func(t *testing.T) {
+		err := ValidateDevEnvConfig(newCfg("/mnt", ""))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "ContainerPath")
+	})
+}
