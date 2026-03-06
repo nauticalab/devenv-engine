@@ -232,11 +232,50 @@ func TestValidateDevEnvConfig_ResourcesNonNegative(t *testing.T) {
 }
 
 //
-// --- ValidateBaseConfig: no tag failures by default -------------------------
+// --- ValidateBaseConfig ------------------------------------------------------
 //
 
 func TestValidateBaseConfig_Smoke(t *testing.T) {
-	// With no validation tags on BaseConfig itself, this should succeed.
+	// Zero-value BaseConfig should still pass baseline validation.
 	var bc BaseConfig
 	require.NoError(t, ValidateBaseConfig(&bc))
+}
+
+func TestValidateBaseConfig_DefaultsPass(t *testing.T) {
+	bc := NewBaseConfigWithDefaults()
+	require.NoError(t, ValidateBaseConfig(&bc))
+}
+
+func TestValidateBaseConfig_PythonBinPathMustBeAbsolute(t *testing.T) {
+	ok := &BaseConfig{PythonBinPath: "/opt/venv/bin"}
+	require.NoError(t, ValidateBaseConfig(ok))
+
+	bad := &BaseConfig{PythonBinPath: "usr/bin"}
+	err := ValidateBaseConfig(bad)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "pythonBinPath")
+	assert.Contains(t, err.Error(), "absolute path")
+}
+
+func TestValidateDevEnvConfig_PythonBinPathMustBeAbsolute(t *testing.T) {
+	ok := &DevEnvConfig{
+		Name: "alice",
+		BaseConfig: BaseConfig{
+			PythonBinPath: "/opt/venv/bin",
+			SSHPublicKey:  "ssh-ed25519 AAAAB3NzaC1lZDI1NTE5AAAA user@host",
+		},
+	}
+	require.NoError(t, ValidateDevEnvConfig(ok))
+
+	bad := &DevEnvConfig{
+		Name: "alice",
+		BaseConfig: BaseConfig{
+			PythonBinPath: "opt/venv/bin",
+			SSHPublicKey:  "ssh-ed25519 AAAAB3NzaC1lZDI1NTE5AAAA user@host",
+		},
+	}
+	err := ValidateDevEnvConfig(bad)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "pythonBinPath")
+	assert.Contains(t, err.Error(), "absolute path")
 }

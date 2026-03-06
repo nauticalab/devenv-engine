@@ -30,7 +30,7 @@ type BaseConfig struct {
 	InstallHomebrew    bool   `yaml:"installHomebrew,omitempty"`
 	ClearLocalPackages bool   `yaml:"clearLocalPackages,omitempty"`
 	ClearVSCodeCache   bool   `yaml:"clearVSCodeCache,omitempty"`
-	PythonBinPath      string `yaml:"pythonBinPath,omitempty" validate:"omitempty,min=1,filepath"`
+	PythonBinPath      string `yaml:"pythonBinPath,omitempty" validate:"omitempty,min=1"`
 	HostName           string `yaml:"hostName,omitempty" validate:"omitempty,min=1,hostname"`
 	EnableAuth         bool   `yaml:"enableAuth,omitempty"`
 	AuthURL            string `yaml:"authURL,omitempty" validate:"omitempty,min=1,url"`

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"math"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -193,6 +194,9 @@ func ValidateDevEnvConfig(config *DevEnvConfig) error {
 	if err := validate.Struct(config); err != nil {
 		return formatValidationError(err)
 	}
+	if err := validatePythonBinPathAbsolute(config.PythonBinPath); err != nil {
+		return err
+	}
 
 	// Require ≥1 SSH public key with valid format.
 	sshKeys, err := config.GetSSHKeys()
@@ -224,6 +228,20 @@ func ValidateDevEnvConfig(config *DevEnvConfig) error {
 func ValidateBaseConfig(config *BaseConfig) error {
 	if err := validate.Struct(config); err != nil {
 		return formatValidationError(err)
+	}
+	if err := validatePythonBinPathAbsolute(config.PythonBinPath); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validatePythonBinPathAbsolute(p string) error {
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return nil
+	}
+	if !path.IsAbs(p) {
+		return fmt.Errorf("pythonBinPath must be an absolute path, got %q", p)
 	}
 	return nil
 }
