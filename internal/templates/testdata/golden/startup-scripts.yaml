@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: startup-scripts-testuser
+  namespace: devenv-test
   labels:
     app: devenv-testuser
 data:
