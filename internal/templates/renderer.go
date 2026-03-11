@@ -12,11 +12,6 @@ import (
 	"github.com/nauticalab/devenv-engine/internal/config"
 )
 
-var devTemplatesToRender = []string{"statefulset", "service", "env-vars",
-	"startup-scripts", "ingress"}
-
-var systemTemplatesToRender = []string{"namespace"}
-
 // Embed all devTemplates and scripts at compile time
 //
 //go:embed template_files
@@ -27,22 +22,29 @@ type Renderer[T config.BaseConfig | config.DevEnvConfig] struct {
 	outputDir       string
 	templateRoot    string
 	targetTemplates []string
+	config          *T
 }
 
-// NewRenderer creates a new template renderer
-func NewDevRenderer(outputDir string) *Renderer[config.DevEnvConfig] {
-	return NewRendererWithFS[config.DevEnvConfig](outputDir, "template_files/dev", devTemplatesToRender)
+// NewDevRenderer is a convenience wrapper for dev-specific render tests and
+// direct callers. If the codebase standardizes on GenerationSpec + NewRenderer,
+// consider removing this wrapper.
+func NewDevRenderer(outputDir string, cfg *config.DevEnvConfig, templateNames []string) *Renderer[config.DevEnvConfig] {
+	return NewRenderer[config.DevEnvConfig](outputDir, "template_files/dev", templateNames, cfg)
 }
 
-func NewSystemRenderer(outputDir string) *Renderer[config.BaseConfig] {
-	return NewRendererWithFS[config.BaseConfig](outputDir, "template_files/system", systemTemplatesToRender)
+// NewSystemRenderer is a convenience wrapper for system-specific direct callers.
+// If the codebase standardizes on GenerationSpec + NewRenderer, consider
+// removing this wrapper.
+func NewSystemRenderer(outputDir string, cfg *config.BaseConfig, templateNames []string) *Renderer[config.BaseConfig] {
+	return NewRenderer[config.BaseConfig](outputDir, "template_files/system", templateNames, cfg)
 }
 
-func NewRendererWithFS[T config.BaseConfig | config.DevEnvConfig](outputDir string, templateRoot string, targetTemplates []string) *Renderer[T] {
+func NewRenderer[T config.BaseConfig | config.DevEnvConfig](outputDir string, templateRoot string, targetTemplates []string, cfg *T) *Renderer[T] {
 	return &Renderer[T]{
 		outputDir:       outputDir,
 		templateRoot:    templateRoot,
 		targetTemplates: targetTemplates,
+		config:          cfg,
 	}
 }
 
@@ -85,7 +87,7 @@ func templateFuncs(templateRoot string) template.FuncMap {
 	}
 }
 
-func (r *Renderer[T]) RenderTemplate(templateName string, config *T) error {
+func (r *Renderer[T]) RenderTemplate(templateName string) error {
 	// Get the template content from embedded files
 	templateContent, err := templates.ReadFile(filepath.Join(r.templateRoot, fmt.Sprintf("manifests/%s.tmpl", templateName)))
 	if err != nil {
@@ -115,7 +117,7 @@ func (r *Renderer[T]) RenderTemplate(templateName string, config *T) error {
 	defer outputFile.Close()
 
 	// Execute template with DevEnvConfig - simple and clean!
-	if err := tmpl.Execute(outputFile, config); err != nil {
+	if err := tmpl.Execute(outputFile, r.config); err != nil {
 		return fmt.Errorf("failed to render template %s: %w", templateName, err)
 	}
 
@@ -123,11 +125,12 @@ func (r *Renderer[T]) RenderTemplate(templateName string, config *T) error {
 	return nil
 }
 
-func (r *Renderer[T]) RenderAll(config *T) error {
+func (r *Renderer[T]) RenderAll() error {
 	for _, templateName := range r.targetTemplates {
-		if err := r.RenderTemplate(templateName, config); err != nil {
+		if err := r.RenderTemplate(templateName); err != nil {
 			return fmt.Errorf("failed to render template %s: %w", templateName, err)
 		}
 	}
+
 	return nil
 }

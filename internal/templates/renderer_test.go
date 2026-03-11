@@ -24,9 +24,10 @@ func TestRenderTemplate(t *testing.T) {
 				"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... testuser@example.com",
 				"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... testuser2@example.com",
 			},
-			UID:   2000,
-			Image: "ubuntu:22.04",
+			UID:       2000,
+			Image:     "ubuntu:22.04",
 			Namespace: "devenv-test",
+			HostName:  "devenv.example.com",
 			Packages: config.PackageConfig{
 				Python: []string{"numpy", "pandas"},
 				APT:    []string{"vim", "curl"},
@@ -66,10 +67,10 @@ func TestRenderTemplate(t *testing.T) {
 			tempDir := t.TempDir()
 
 			// Create renderer
-			renderer := NewDevRenderer(tempDir)
+			renderer := NewDevRenderer(tempDir, testConfig, BuildDevRenderPlan(testConfig).TemplateNames)
 
 			// Render template
-			err := renderer.RenderTemplate(templateName, testConfig)
+			err := renderer.RenderTemplate(templateName)
 			require.NoError(t, err, "Failed to render template %s", templateName)
 
 			// Read the generated output
@@ -105,36 +106,100 @@ func TestRenderTemplate(t *testing.T) {
 
 // TestRenderAll tests the RenderAll function that renders all templates
 func TestRenderAll(t *testing.T) {
-	// Create minimal test configuration
-	testConfig := &config.DevEnvConfig{
-		Name: "minimal",
-		BaseConfig: config.BaseConfig{
-			SSHPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... minimal@example.com",
-			Namespace:   "devenv-test",
-		},
-		SSHPort: 30002,
+	t.Run("includes ingress when HTTP port is set", func(t *testing.T) {
+		testConfig := &config.DevEnvConfig{
+			Name: "minimal",
+			BaseConfig: config.BaseConfig{
+				SSHPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... minimal@example.com",
+				Namespace:    "devenv-test",
+				HostName:     "devenv.example.com",
+			},
+			SSHPort:  30002,
+			HTTPPort: 8080,
+		}
+
+		tempDir := t.TempDir()
+		renderer := NewDevRenderer(tempDir, testConfig, BuildDevRenderPlan(testConfig).TemplateNames)
+
+		err := renderer.RenderAll()
+		require.NoError(t, err, "RenderAll should not return error")
+
+		expectedFiles := templateNamesToFiles(BuildDevRenderPlan(testConfig).TemplateNames)
+
+		for _, filename := range expectedFiles {
+			filePath := filepath.Join(tempDir, filename)
+			_, err := os.Stat(filePath)
+			assert.NoError(t, err, "Expected file %s should exist", filename)
+
+			content, err := os.ReadFile(filePath)
+			require.NoError(t, err)
+			assert.NotEmpty(t, content, "File %s should not be empty", filename)
+		}
+	})
+
+	t.Run("skips ingress when HTTP port is unset", func(t *testing.T) {
+		testConfig := &config.DevEnvConfig{
+			Name: "minimal",
+			BaseConfig: config.BaseConfig{
+				SSHPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... minimal@example.com",
+				Namespace:    "devenv-test",
+			},
+			SSHPort: 30002,
+		}
+
+		tempDir := t.TempDir()
+		renderer := NewDevRenderer(tempDir, testConfig, BuildDevRenderPlan(testConfig).TemplateNames)
+
+		err := renderer.RenderAll()
+		require.NoError(t, err, "RenderAll should not return error")
+
+		expectedFiles := templateNamesToFiles(BuildDevRenderPlan(testConfig).TemplateNames)
+		for _, filename := range expectedFiles {
+			filePath := filepath.Join(tempDir, filename)
+			_, err := os.Stat(filePath)
+			assert.NoError(t, err, "Expected file %s should exist", filename)
+		}
+
+		_, err = os.Stat(filepath.Join(tempDir, "ingress.yaml"))
+		assert.ErrorIs(t, err, os.ErrNotExist, "ingress.yaml should not be generated without HTTP port")
+	})
+
+	t.Run("preserves stale ingress when render fails", func(t *testing.T) {
+		testConfig := &config.DevEnvConfig{
+			Name: "minimal",
+			BaseConfig: config.BaseConfig{
+				SSHPublicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... minimal@example.com",
+				Namespace:    "devenv-test",
+			},
+			SSHPort: 30002,
+		}
+
+		tempDir := t.TempDir()
+		staleIngress := filepath.Join(tempDir, "ingress.yaml")
+		require.NoError(t, os.WriteFile(staleIngress, []byte("stale"), 0o644))
+
+		renderer := NewRenderer[config.DevEnvConfig](
+			tempDir,
+			"template_files/dev",
+			[]string{"nonexistent-template"},
+			testConfig,
+		)
+
+		err := renderer.RenderAll()
+		require.Error(t, err)
+
+		content, readErr := os.ReadFile(staleIngress)
+		require.NoError(t, readErr)
+		assert.Equal(t, "stale", string(content), "stale ingress.yaml should be preserved when render fails")
+	})
+}
+
+func templateNamesToFiles(templateNames []string) []string {
+	files := make([]string, 0, len(templateNames))
+	for _, templateName := range templateNames {
+		files = append(files, templateName+".yaml")
 	}
-
-	tempDir := t.TempDir()
-	renderer := NewDevRenderer(tempDir)
-
-	// Test RenderAll
-	err := renderer.RenderAll(testConfig)
-	require.NoError(t, err, "RenderAll should not return error")
-
-	// Verify all expected files were created
-	expectedFiles := []string{"statefulset.yaml", "service.yaml", "env-vars.yaml", "startup-scripts.yaml", "ingress.yaml"}
-
-	for _, filename := range expectedFiles {
-		filePath := filepath.Join(tempDir, filename)
-		_, err := os.Stat(filePath)
-		assert.NoError(t, err, "Expected file %s should exist", filename)
-
-		// Verify file is not empty
-		content, err := os.ReadFile(filePath)
-		require.NoError(t, err)
-		assert.NotEmpty(t, content, "File %s should not be empty", filename)
-	}
+	return files
 }
 
 // TestRenderTemplate_ErrorCases tests error handling in template rendering
@@ -148,17 +213,19 @@ func TestRenderTemplate_ErrorCases(t *testing.T) {
 
 	t.Run("invalid template name", func(t *testing.T) {
 		tempDir := t.TempDir()
-		renderer := NewDevRenderer(tempDir)
+		renderer := NewDevRenderer(tempDir, testConfig, BuildDevRenderPlan(testConfig).TemplateNames)
 
-		err := renderer.RenderTemplate("nonexistent", testConfig)
+		err := renderer.RenderTemplate("nonexistent")
 		assert.Error(t, err, "Should return error for invalid template")
 	})
 
 	t.Run("invalid output directory", func(t *testing.T) {
-		// Use a path that can't be created (assuming /root is not writable in test)
-		renderer := NewDevRenderer("/root/impossible/path")
+		// Make the parent path a file so MkdirAll fails deterministically.
+		parentFile := filepath.Join(t.TempDir(), "not-a-directory")
+		require.NoError(t, os.WriteFile(parentFile, []byte("x"), 0o644))
+		renderer := NewDevRenderer(filepath.Join(parentFile, "child"), testConfig, BuildDevRenderPlan(testConfig).TemplateNames)
 
-		err := renderer.RenderTemplate("configmap", testConfig)
+		err := renderer.RenderTemplate("env-vars")
 		assert.Error(t, err, "Should return error for invalid output directory")
 	})
 }

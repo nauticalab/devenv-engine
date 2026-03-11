@@ -31,6 +31,7 @@ var (
 	configDir string // Input directory for developer configs
 	dryRun    bool
 	allDevs   bool
+	noCleanup bool
 )
 
 var generateCmd = &cobra.Command{
@@ -75,6 +76,7 @@ func init() {
 	generateCmd.Flags().StringVar(&configDir, "config-dir", "./developers", "Directory containing developer configuration files")
 	generateCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be generated without creating files")
 	generateCmd.Flags().BoolVar(&allDevs, "all-developers", false, "Generate manifests for all developers")
+	generateCmd.Flags().BoolVar(&noCleanup, "no-cleanup", false, "Preserve files from previous runs instead of removing unplanned outputs")
 
 }
 
@@ -266,12 +268,11 @@ func generateSingleDeveloper(developerName string) {
 }
 
 func generateSystemManifests(cfg *config.BaseConfig, outputDir string) error {
-	// Create template renderer
-	renderer := templates.NewSystemRenderer(outputDir)
+	postRenderOpts := templates.NewPostRenderOptions(!noCleanup)
+	spec := templates.BuildSystemGenerationSpec(cfg, outputDir, postRenderOpts)
 
-	// Render all main templates
-	if err := renderer.RenderAll(cfg); err != nil {
-		return fmt.Errorf("failed to render templates: %w", err)
+	if err := generateManifests(spec); err != nil {
+		return err
 	}
 
 	fmt.Printf("🎉 Successfully generated system manifests\n")
@@ -281,15 +282,28 @@ func generateSystemManifests(cfg *config.BaseConfig, outputDir string) error {
 
 // generateDeveloperManifests creates Kubernetes manifests for a developer
 func generateDeveloperManifests(cfg *config.DevEnvConfig, outputDir string) error {
-	// Create template renderer
-	renderer := templates.NewDevRenderer(outputDir)
+	postRenderOpts := templates.NewPostRenderOptions(!noCleanup)
+	spec := templates.BuildDevGenerationSpec(cfg, outputDir, postRenderOpts)
 
-	// Render all main templates
-	if err := renderer.RenderAll(cfg); err != nil {
-		return fmt.Errorf("failed to render templates: %w", err)
+	if err := generateManifests(spec); err != nil {
+		return err
 	}
 
 	fmt.Printf("🎉 Successfully generated manifests for %s\n", cfg.Name)
+
+	return nil
+}
+
+func generateManifests[T config.BaseConfig | config.DevEnvConfig](spec templates.GenerationSpec[T]) error {
+	renderer := templates.NewRenderer(spec.OutputDir, spec.TemplateRoot, spec.Plan.TemplateNames, spec.Config)
+
+	if err := renderer.RenderAll(); err != nil {
+		return fmt.Errorf("failed to render templates: %w", err)
+	}
+
+	if err := templates.RunPostRender(spec.OutputDir, spec.Plan, spec.PostRenderOptions); err != nil {
+		return fmt.Errorf("failed to run post-render steps: %w", err)
+	}
 
 	return nil
 }

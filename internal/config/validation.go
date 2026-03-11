@@ -250,6 +250,22 @@ func ValidateDevEnvConfig(config *DevEnvConfig) error {
 		return fmt.Errorf("gpu must be >= 0")
 	}
 
+	if config.HasHTTPPort() && !config.HasHostName() {
+		return fmt.Errorf("hostName is required when httpPort is set")
+	}
+
+	if config.EnableAuth && config.SkipAuth {
+		return fmt.Errorf("enableAuth and skipAuth cannot both be true")
+	}
+
+	if config.EnableAuth && strings.TrimSpace(config.AuthURL) == "" {
+		return fmt.Errorf("authURL is required when enableAuth is true")
+	}
+
+	if config.EnableAuth && strings.TrimSpace(config.AuthSignIn) == "" {
+		return fmt.Errorf("authSignIn is required when enableAuth is true")
+	}
+
 	return nil
 }
 
