@@ -3,7 +3,8 @@ name: Release
 on:
   push:
     tags:
-      - "v*" # Trigger on version tags like v0.1.0, v1.2.3
+      - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write # Required for creating releases
@@ -11,85 +12,44 @@ permissions:
 jobs:
   test:
     name: Run Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-
-      - name: Run tests
-        run: go test -v ./...
+    uses: ./.github/workflows/run-test.yml
+    secrets: inherit
 
   release:
     name: Build and Release
-    needs: test # Only run if tests pass
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version-file: go.mod
 
-      - name: Build binaries for all platforms
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build release binaries
+        run: task build:dist
+
+      # Integration-tested platform: linux/amd64 runs natively in this CI environment.
+      # All other platforms (linux/arm64, darwin/amd64, darwin/arm64, windows/amd64)
+      # are cross-compiled only — binaries are published but not executed in CI.
+      - name: Validate linux/amd64 binary
         run: |
-          # Get version from tag (GitHub sets GITHUB_REF to refs/tags/v0.1.0)
-          VERSION=${GITHUB_REF#refs/tags/}
-          COMMIT=$(git rev-parse --short HEAD)
-          BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          GO_VERSION=$(go version | awk '{print $3}')
-
-          echo "Building version: ${VERSION}"
-
-          # Build flags
-          LDFLAGS="-X main.version=${VERSION} -X main.gitCommit=${COMMIT} -X main.buildTime=${BUILD_TIME} -X main.goVersion=${GO_VERSION} -w -s"
-
-          # Create output directory
-          mkdir -p dist
-
-          # Linux amd64
-          echo "Building Linux amd64..."
-          GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/devenv-linux-amd64 ./cmd/devenv
-
-          # Linux arm64
-          echo "Building Linux arm64..."
-          GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/devenv-linux-arm64 ./cmd/devenv
-
-          # macOS amd64 (Intel)
-          echo "Building macOS amd64..."
-          GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/devenv-darwin-amd64 ./cmd/devenv
-
-          # macOS arm64 (Apple Silicon)
-          echo "Building macOS arm64..."
-          GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/devenv-darwin-arm64 ./cmd/devenv
-
-          # Windows amd64
-          echo "Building Windows amd64..."
-          GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/devenv-windows-amd64.exe ./cmd/devenv
-
-          echo "✅ All binaries built successfully"
-          ls -lh dist/
-
-      - name: Generate checksums
-        run: |
-          cd dist
-          sha256sum * > checksums.txt
+          VERSION=$(./scripts/get-version.sh)
+          ./dist/devenv_${VERSION}_linux_amd64 version
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/devenv-linux-amd64
-            dist/devenv-linux-arm64
-            dist/devenv-darwin-amd64
-            dist/devenv-darwin-arm64
-            dist/devenv-windows-amd64.exe
+            dist/devenv_*
             dist/checksums.txt
           generate_release_notes: true
           draft: false
