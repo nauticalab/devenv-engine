@@ -347,3 +347,73 @@ func TestValidateDevEnvConfig_VolumeMountPaths(t *testing.T) {
 		assert.Contains(t, err.Error(), "ContainerPath")
 	})
 }
+
+func TestValidateDevEnvConfig_IngressDependencies(t *testing.T) {
+	newCfg := func() *DevEnvConfig {
+		return &DevEnvConfig{
+			Name: "alice",
+			BaseConfig: BaseConfig{
+				SSHPublicKey: "ssh-ed25519 AAAAB3NzaC1lZDI1NTE5AAAA user@host",
+			},
+		}
+	}
+
+	t.Run("requires hostName when httpPort is set", func(t *testing.T) {
+		cfg := newCfg()
+		cfg.HTTPPort = 8080
+
+		err := ValidateDevEnvConfig(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "hostName is required when httpPort is set")
+	})
+
+	t.Run("allows httpPort with hostName", func(t *testing.T) {
+		cfg := newCfg()
+		cfg.HTTPPort = 8080
+		cfg.HostName = "devenv.example.com"
+
+		require.NoError(t, ValidateDevEnvConfig(cfg))
+	})
+
+	t.Run("requires authURL when enableAuth is true", func(t *testing.T) {
+		cfg := newCfg()
+		cfg.EnableAuth = true
+		cfg.AuthSignIn = "https://auth.example.com/start"
+
+		err := ValidateDevEnvConfig(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "authURL is required when enableAuth is true")
+	})
+
+	t.Run("requires authSignIn when enableAuth is true", func(t *testing.T) {
+		cfg := newCfg()
+		cfg.EnableAuth = true
+		cfg.AuthURL = "https://auth.example.com/auth"
+
+		err := ValidateDevEnvConfig(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "authSignIn is required when enableAuth is true")
+	})
+
+	t.Run("allows enableAuth with auth URLs", func(t *testing.T) {
+		cfg := newCfg()
+		cfg.EnableAuth = true
+		cfg.AuthURL = "https://auth.example.com/auth"
+		cfg.AuthSignIn = "https://auth.example.com/start"
+
+		require.NoError(t, ValidateDevEnvConfig(cfg))
+	})
+
+	t.Run("rejects enableAuth with skipAuth", func(t *testing.T) {
+		cfg := newCfg()
+		cfg.EnableAuth = true
+		cfg.SkipAuth = true
+		cfg.AuthURL = "https://auth.example.com/auth"
+		cfg.AuthSignIn = "https://auth.example.com/start"
+
+		err := ValidateDevEnvConfig(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "enableAuth and skipAuth cannot both be true")
+	})
+
+}
