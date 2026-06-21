@@ -113,11 +113,11 @@ spec:
       volumes:
       - name: dev-storage
         hostPath:
-          path: /mnt/devenv/{{.Name}}/homedir
+          path: {{.HomeDirMountBase}}/{{.Name}}/homedir
           type: DirectoryOrCreate
       - name: dev-linuxbrew
         hostPath:
-          path: /mnt/devenv/{{.Name}}/linuxbrew  
+          path: {{.HomeDirMountBase}}/{{.Name}}/linuxbrew
           type: DirectoryOrCreate
       - name: startup-scripts
         configMap:

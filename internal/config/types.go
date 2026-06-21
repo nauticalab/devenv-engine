@@ -22,6 +22,9 @@ type BaseConfig struct {
 
 	// Storage configuration
 	Volumes []VolumeMount `yaml:"volumes,omitempty" validate:"dive"`
+	// HomeDirMountBase is the host path prefix under which per-developer home
+	// and linuxbrew volumes are created (e.g. /mnt/devenv → /mnt/devenv/<name>/homedir).
+	HomeDirMountBase string `yaml:"homeDirMountBase,omitempty" validate:"omitempty,mount_path"`
 
 	// Access configuration
 	SSHPublicKey any `yaml:"sshPublicKey,omitempty" validate:"omitempty,ssh_keys"` // Can be string or []string
@@ -30,7 +33,7 @@ type BaseConfig struct {
 	InstallHomebrew    bool   `yaml:"installHomebrew,omitempty"`
 	ClearLocalPackages bool   `yaml:"clearLocalPackages,omitempty"`
 	ClearVSCodeCache   bool   `yaml:"clearVSCodeCache,omitempty"`
-	PythonBinPath      string `yaml:"pythonBinPath,omitempty" validate:"omitempty,min=1"`
+	PythonBinPath      string `yaml:"pythonBinPath,omitempty" validate:"omitempty,mount_path"`
 	HostName           string `yaml:"hostName,omitempty" validate:"omitempty,min=1,hostname"`
 	EnableAuth         bool   `yaml:"enableAuth,omitempty"`
 	AuthURL            string `yaml:"authURL,omitempty" validate:"omitempty,min=1,url"`
@@ -80,7 +83,7 @@ type GitRepo struct {
 	Branch     string `yaml:"branch,omitempty" validate:"omitempty,min=1"`
 	Tag        string `yaml:"tag,omitempty" validate:"omitempty,min=1"`
 	CommitHash string `yaml:"commitHash,omitempty" validate:"omitempty,min=1"`
-	Directory  string `yaml:"directory,omitempty" validate:"omitempty,min=1,filepath"`
+	Directory  string `yaml:"directory,omitempty" validate:"omitempty,mount_path"`
 }
 
 // ResourceConfig represents resource allocation
@@ -128,6 +131,7 @@ func NewBaseConfigWithDefaults() BaseConfig {
 		},
 		GitRepos:        []GitRepo{},     // Empty slice - no default git repositories
 		Volumes:         []VolumeMount{}, // Empty slice - no default volumes
+		HomeDirMountBase: "/mnt/devenv", // Default host path prefix for home/linuxbrew volumes
 		Namespace:       "devenv",        // Default namespace
 		EnvironmentName: "development",   // Default environment name
 	}
@@ -220,6 +224,21 @@ func (c *DevEnvConfig) MemoryRequest() string {
 // to the port value for Kubernetes NodePort services.
 func (c *DevEnvConfig) NodePort() int {
 	return c.SSHPort
+}
+
+// HasHTTPPort reports whether HTTP exposure is configured.
+func (c *DevEnvConfig) HasHTTPPort() bool {
+	return c != nil && c.HTTPPort != 0
+}
+
+// HasHostName reports whether a non-empty ingress hostname is configured.
+func (c *DevEnvConfig) HasHostName() bool {
+	return c != nil && strings.TrimSpace(c.HostName) != ""
+}
+
+// ShouldRenderIngress reports whether ingress can be safely rendered.
+func (c *DevEnvConfig) ShouldRenderIngress() bool {
+	return c.HasHTTPPort() && c.HasHostName()
 }
 
 // VolumeMounts returns the configured volume mount specifications.

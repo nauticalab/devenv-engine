@@ -94,7 +94,7 @@ spec:
           type: DirectoryOrCreate
       - name: dev-linuxbrew
         hostPath:
-          path: /mnt/devenv/testuser/linuxbrew  
+          path: /mnt/devenv/testuser/linuxbrew
           type: DirectoryOrCreate
       - name: startup-scripts
         configMap:
