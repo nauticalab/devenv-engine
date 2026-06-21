@@ -26,5 +26,4 @@ func init() {
 	// Add subcommands to root
 	rootCmd.AddCommand(generateCmd)
 	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(validateCmd)
 }
