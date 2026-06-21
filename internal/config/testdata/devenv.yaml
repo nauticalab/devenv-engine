@@ -1,0 +1,5 @@
+# Global config fixture for integration tests and CI validation (release.yml).
+# Supplies cluster-level defaults that individual developer configs do not define.
+image: "ubuntu:22.04"
+hostName: "devenv.example.com"
+namespace: "devenv"
