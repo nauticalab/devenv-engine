@@ -222,6 +222,21 @@ func (c *DevEnvConfig) NodePort() int {
 	return c.SSHPort
 }
 
+// HasHTTPPort reports whether HTTP exposure is configured.
+func (c *DevEnvConfig) HasHTTPPort() bool {
+	return c != nil && c.HTTPPort != 0
+}
+
+// HasHostName reports whether a non-empty ingress hostname is configured.
+func (c *DevEnvConfig) HasHostName() bool {
+	return c != nil && strings.TrimSpace(c.HostName) != ""
+}
+
+// ShouldRenderIngress reports whether ingress can be safely rendered.
+func (c *DevEnvConfig) ShouldRenderIngress() bool {
+	return c.HasHTTPPort() && c.HasHostName()
+}
+
 // VolumeMounts returns the configured volume mount specifications.
 // Returns the slice of VolumeMount configurations for binding local directories
 // into the developer environment container.

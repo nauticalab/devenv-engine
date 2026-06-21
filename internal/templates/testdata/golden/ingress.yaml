@@ -10,7 +10,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: testuser.
+    - host: testuser.devenv.example.com
       http:
         paths:
           - path: /
@@ -22,5 +22,5 @@ spec:
                   name: http
   tls:
     - hosts:
-        - "*."
+        - "*.devenv.example.com"
       secretName: http-testuser-tls

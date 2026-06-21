@@ -57,33 +57,13 @@ resources:
 		assert.Equal(t, 0, cfg.Resources.GPU)          // default GPU unchanged
 	})
 
-	t.Run("global config file does not exist -> system defaults", func(t *testing.T) {
+	t.Run("global config file does not exist -> error", func(t *testing.T) {
 		tempDir := t.TempDir()
 
 		cfg, err := LoadGlobalConfig(tempDir)
-		require.NoError(t, err)
-
-		// Top-level defaults
-		assert.Equal(t, "ubuntu:22.04", cfg.Image)
-		assert.True(t, cfg.InstallHomebrew)
-		assert.False(t, cfg.ClearLocalPackages)
-		assert.False(t, cfg.ClearVSCodeCache)
-		assert.Equal(t, "/opt/venv/bin", cfg.PythonBinPath)
-		assert.Equal(t, 1000, cfg.UID)
-
-		// Canonical resource defaults (CPU millicores, Memory Mi)
-		assert.Equal(t, int(2), cfg.Resources.CPU)           // 2 cores
-		assert.Equal(t, string("8Gi"), cfg.Resources.Memory) // 8Gi
-		assert.Equal(t, "20Gi", cfg.Resources.Storage)
-		assert.Equal(t, 0, cfg.Resources.GPU)
-
-		// Slices are non-nil and empty
-		assert.NotNil(t, cfg.Packages.APT)
-		assert.Len(t, cfg.Packages.APT, 0)
-		assert.NotNil(t, cfg.Packages.Python)
-		assert.Len(t, cfg.Packages.Python, 0)
-		assert.NotNil(t, cfg.Volumes)
-		assert.Len(t, cfg.Volumes, 0)
+		require.Error(t, err)
+		assert.Nil(t, cfg)
+		assert.Contains(t, err.Error(), "devenv.yaml is required")
 	})
 
 	t.Run("invalid YAML in global config -> error", func(t *testing.T) {
@@ -295,38 +275,14 @@ git:
 		assert.Equal(t, developerDir, cfg.DeveloperDir)
 	})
 
-	t.Run("user config with no global config", func(t *testing.T) {
+	t.Run("user config with no global config -> error", func(t *testing.T) {
 		tempDir := t.TempDir()
 
-		// Only user config (no devenv.yaml)
-		developerDir := filepath.Join(tempDir, "alice")
-		require.NoError(t, os.MkdirAll(developerDir, 0o755))
-
-		userConfigYAML := `name: alice
-sshPublicKey: "ssh-rsa AAAAB3NzaC1yc2E alice@example.com"
-installHomebrew: false
-`
-		require.NoError(t, os.WriteFile(filepath.Join(developerDir, "devenv-config.yaml"), []byte(userConfigYAML), 0o644))
-
-		// Global = system defaults (no file present)
+		// devenv.yaml is mandatory; loading without it must fail before developer config is attempted.
 		globalCfg, err := LoadGlobalConfig(tempDir)
-		require.NoError(t, err)
-
-		cfg, err := LoadDeveloperConfigWithBaseConfig(tempDir, "alice", globalCfg)
-		require.NoError(t, err)
-
-		// Defaults + user overrides
-		assert.Equal(t, "alice", cfg.Name)
-		assert.Equal(t, "ubuntu:22.04", cfg.Image)          // system default
-		assert.False(t, cfg.InstallHomebrew)                // user override
-		assert.False(t, cfg.ClearLocalPackages)             // system default
-		assert.Equal(t, "/opt/venv/bin", cfg.PythonBinPath) // system default
-
-		// Canonical resource defaults and formatted getters
-		assert.Equal(t, int(2), cfg.Resources.CPU)           // default 2 cores
-		assert.Equal(t, string("8Gi"), cfg.Resources.Memory) // default 8Gi
-		assert.Equal(t, "2000m", cfg.CPU())
-		assert.Equal(t, "8Gi", cfg.Memory())
+		require.Error(t, err)
+		assert.Nil(t, globalCfg)
+		assert.Contains(t, err.Error(), "devenv.yaml is required")
 	})
 }
 
