@@ -224,9 +224,6 @@ func ValidateDevEnvConfig(config *DevEnvConfig) error {
 	if err := validate.Struct(config); err != nil {
 		return formatValidationError(err)
 	}
-	if err := validatePythonBinPathAbsolute(config.PythonBinPath); err != nil {
-		return err
-	}
 
 	// Require ≥1 SSH public key with valid format.
 	sshKeys, err := config.GetSSHKeys()
@@ -250,6 +247,22 @@ func ValidateDevEnvConfig(config *DevEnvConfig) error {
 		return fmt.Errorf("gpu must be >= 0")
 	}
 
+	if config.HasHTTPPort() && !config.HasHostName() {
+		return fmt.Errorf("hostName is required when httpPort is set")
+	}
+
+	if config.EnableAuth && config.SkipAuth {
+		return fmt.Errorf("enableAuth and skipAuth cannot both be true")
+	}
+
+	if config.EnableAuth && strings.TrimSpace(config.AuthURL) == "" {
+		return fmt.Errorf("authURL is required when enableAuth is true")
+	}
+
+	if config.EnableAuth && strings.TrimSpace(config.AuthSignIn) == "" {
+		return fmt.Errorf("authSignIn is required when enableAuth is true")
+	}
+
 	return nil
 }
 
@@ -258,20 +271,6 @@ func ValidateDevEnvConfig(config *DevEnvConfig) error {
 func ValidateBaseConfig(config *BaseConfig) error {
 	if err := validate.Struct(config); err != nil {
 		return formatValidationError(err)
-	}
-	if err := validatePythonBinPathAbsolute(config.PythonBinPath); err != nil {
-		return err
-	}
-	return nil
-}
-
-func validatePythonBinPathAbsolute(p string) error {
-	p = strings.TrimSpace(p)
-	if p == "" {
-		return nil
-	}
-	if !path.IsAbs(p) {
-		return fmt.Errorf("pythonBinPath must be an absolute path, got %q", p)
 	}
 	return nil
 }
